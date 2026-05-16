@@ -1,0 +1,37 @@
+{
+  "landing": {
+    "tagline": "Học một lần, nhớ cả đời",
+    "description": "Biến PDF, slide bài giảng, ghi chú của bạn thành mind map + flashcard + quiz tự động bằng AI. Tối ưu cho người Việt — tiếng Việt, giá Việt, thanh toán Việt.",
+    "ctaPrimary": "Dùng thử miễn phí",
+    "ctaSecondary": "Đăng nhập",
+    "feature1Title": "Mind map AI",
+    "feature1Description": "Upload slide PDF → AI sinh mind map có hệ thống trong 30 giây. Edit thoải mái.",
+    "feature2Title": "Flashcard tự động",
+    "feature2Description": "Mỗi node mind map → flashcard. Spaced repetition nhắc ôn đúng lúc trước khi quên.",
+    "feature3Title": "Quiz luyện thi",
+    "feature3Description": "AI sinh trắc nghiệm + điền khuyết từ kiến thức bạn đã học. Câu sai tự thêm vào flashcard."
+  },
+  "auth": {
+    "loginTitle": "Đăng nhập Não Cá Vàng",
+    "registerTitle": "Tạo tài khoản miễn phí",
+    "emailLabel": "Email",
+    "passwordLabel": "Mật khẩu",
+    "submitLogin": "Đăng nhập",
+    "submitRegister": "Đăng ký",
+    "googleButton": "Tiếp tục với Google",
+    "forgotPassword": "Quên mật khẩu?",
+    "noAccount": "Chưa có tài khoản?",
+    "hasAccount": "Đã có tài khoản?",
+    "switchToRegister": "Đăng ký",
+    "switchToLogin": "Đăng nhập"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "create": "Tạo mới",
+    "back": "Quay lại"
+  }
+}
