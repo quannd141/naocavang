@@ -1,0 +1,118 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[Quân Nguyễn] Agent Router: Phan loai task truoc khi bat dau. (A) Du an moi / tinh nang lon chua phan tich -> /project-kickoff (PM->BA->TechLead). (B) Task cu the tren du an dang chay -> /context-loader -> chon agent phu hop. (C) Y tuong tho (slides/mockup) -> /project-ideation. (D) Dong sprint -> /sprint-end-review. (E) Chay autonomous qua dem -> /night-shift (chi mock mode + local only).\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[Quân Nguyễn] Coding Standards Check: (1) English naming? (2) No 'any' / 'var'? (3) Function < 50 lines? (4) Custom error classes? (5) No hardcoded secrets? (6) Night-shift mode? -> mock adapter, no real API.\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[Quân Nguyễn] Bash Safety: Destructive commands (rm -rf, DROP TABLE, git reset --hard, git push --force, deploy prod) need explicit user confirmation. Night-shift: stricter deny list applies.\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[Quân Nguyễn] File saved. Next: (1) Run lint (npm run lint / ruff check). (2) Run tests (npm test / pytest). (3) Self-review. (4) Check PENDING_HUMAN.md before claiming done.\""
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run format)",
+      "Bash(npm test)",
+      "Bash(npm run test:*)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(ruff check *)",
+      "Bash(black *)",
+      "Bash(pytest*)",
+      "Bash(uv run*)",
+      "Bash(uv pip install *)",
+      "Bash(docker compose up*)",
+      "Bash(docker compose down*)",
+      "Bash(docker compose logs*)",
+      "Bash(docker build *)",
+      "Bash(git status)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git branch*)",
+      "Bash(git checkout *)",
+      "Bash(git push origin night-shift/*)",
+      "Bash(git push origin feature/*)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push origin main*)",
+      "Bash(git push origin master*)",
+      "Bash(git push origin prod*)",
+      "Bash(git push origin production*)",
+      "Bash(git push origin release*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -fd*)",
+      "Bash(git branch -D main*)",
+      "Bash(git branch -D master*)",
+      "Bash(DROP DATABASE*)",
+      "Bash(DROP TABLE*)",
+      "Bash(TRUNCATE *)",
+      "Bash(docker push *)",
+      "Bash(kubectl apply*)",
+      "Bash(kubectl delete*)",
+      "Bash(kubectl exec*)",
+      "Bash(helm install*)",
+      "Bash(helm upgrade*)",
+      "Bash(helm uninstall*)",
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(vercel deploy --prod*)",
+      "Bash(vercel --prod*)",
+      "Bash(railway up --prod*)",
+      "Bash(fly deploy*)",
+      "Bash(netlify deploy --prod*)",
+      "Bash(npm publish*)",
+      "Bash(yarn publish*)",
+      "Bash(pnpm publish*)",
+      "Bash(pip upload*)",
+      "Bash(twine upload*)",
+      "Bash(cargo publish*)",
+      "Bash(aws s3 rm*)",
+      "Bash(aws s3api delete*)",
+      "Bash(gcloud compute instances delete*)",
+      "Bash(az vm delete*)"
+    ]
+  }
+}

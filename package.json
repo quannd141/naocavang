@@ -1,0 +1,41 @@
+{
+  "name": "nao-ca-vang",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Não Cá Vàng — Nền tảng học bằng mind map + AI cho người Việt",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "lint": "turbo run lint",
+    "format": "biome format --write .",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^20.16.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "turbo": "^2.2.0",
+    "typescript": "^5.6.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json}": [
+      "biome format --write",
+      "biome lint --write"
+    ]
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
