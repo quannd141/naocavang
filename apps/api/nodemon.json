@@ -1,0 +1,10 @@
+{
+  "watch": ["src"],
+  "ext": "ts,json",
+  "ignore": ["src/**/*.spec.ts", "dist/**/*"],
+  "exec": "node --require ts-node/register --require reflect-metadata src/main.ts",
+  "env": {
+    "TS_NODE_PROJECT": "tsconfig.dev.json",
+    "TS_NODE_TRANSPILE_ONLY": "true"
+  }
+}

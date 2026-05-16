@@ -22,15 +22,20 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  // Swagger OpenAPI docs
-  const config = new DocumentBuilder()
-    .setTitle('Não Cá Vàng API')
-    .setDescription('API cho nền tảng học bằng mind map + AI')
-    .setVersion('0.1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  // Swagger OpenAPI docs — wrapped: @nestjs/swagger 7.x has known Node 24 incompat (reflect-metadata mismatch).
+  // Skip silently in dev if it fails; the API still serves. Re-enable after upgrade to swagger@8.
+  try {
+    const config = new DocumentBuilder()
+      .setTitle('Não Cá Vàng API')
+      .setDescription('API cho nền tảng học bằng mind map + AI')
+      .setVersion('0.1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  } catch (err) {
+    logger.warn(`Swagger setup skipped: ${(err as Error).message}`);
+  }
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port);
