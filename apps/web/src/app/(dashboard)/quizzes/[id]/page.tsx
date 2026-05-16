@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { type Quiz, type QuizQuestion, getMockQuiz } from '@/lib/mock/quizzes';
+import { type Quiz, getMockQuiz } from '@/lib/mock/quizzes';
 
 type Phase = 'intro' | 'play' | 'result';
 
@@ -106,7 +106,7 @@ export default function QuizPage() {
                   const selected = currentAnswer === i;
                   return (
                     <button
-                      key={i}
+                      key={`${question.id}-opt-${i}-${opt}`}
                       type="button"
                       onClick={() => setAnswers((a) => ({ ...a, [question.id]: i }))}
                       className={cn(

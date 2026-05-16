@@ -14,9 +14,9 @@ const STATS = [
 ];
 
 const RECENT = [
-  { type: 'mindmap', title: 'Toán Lớp 10 — Hàm số bậc 2', subtitle: '8 nodes • cập nhật 2 giờ trước', href: '/mindmaps/mm-1', icon: Network },
-  { type: 'flashcard', title: 'Tiếng Anh 600 từ vựng', subtitle: '24 cards • 12 đến hạn ôn', href: '/flashcards/fc-1', icon: BookMarked },
-  { type: 'quiz', title: 'IELTS Reading — Practice Test 3', subtitle: '10 câu • điểm 7/10', href: '/quizzes/qz-1', icon: GraduationCap },
+  { type: 'mindmap', title: 'Toán Lớp 10 — Hàm số bậc 2', subtitle: '8 nodes • cập nhật 2 giờ trước', href: '/mindmaps/mm-toan10', icon: Network },
+  { type: 'flashcard', title: 'Tiếng Anh 600 từ vựng', subtitle: '8 cards • 12 đến hạn ôn', href: '/flashcards/eng-600', icon: BookMarked },
+  { type: 'quiz', title: 'IELTS Reading — Practice Test 3', subtitle: '4 câu • luyện thi', href: '/quizzes/qz-ielts-r', icon: GraduationCap },
 ];
 
 const QUICK_ACTIONS = [

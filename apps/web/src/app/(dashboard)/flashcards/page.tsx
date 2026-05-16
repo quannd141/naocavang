@@ -4,16 +4,26 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { MOCK_DECKS, dueCards } from '@/lib/mock/flashcards';
 
 export const metadata = { title: 'Flashcards' };
 
-const DECKS = [
-  { id: 'eng-600', title: 'Tiếng Anh 600 từ vựng', subject: 'Tiếng Anh', cards: 24, due: 12, mastery: 45 },
-  { id: 'toan-ct', title: 'Toán — Công thức lượng giác', subject: 'Toán', cards: 18, due: 3, mastery: 78 },
-  { id: 'su-vn', title: 'Lịch sử VN — Mốc thời gian', subject: 'Sử', cards: 30, due: 8, mastery: 30 },
-  { id: 'ielts-idiom', title: 'IELTS — 50 Idioms band 7+', subject: 'IELTS', cards: 50, due: 20, mastery: 15 },
-  { id: 'hoa-hc', title: 'Hoá hữu cơ — Phản ứng đặc trưng', subject: 'Hoá', cards: 12, due: 0, mastery: 92 },
-];
+const MASTERY_OVERRIDES: Record<string, number> = {
+  'eng-600': 45,
+  'toan-ct': 78,
+  'su-vn': 30,
+  'ielts-idiom': 15,
+  'hoa-hc': 92,
+};
+
+const DECKS = MOCK_DECKS.map((d) => ({
+  id: d.id,
+  title: d.title,
+  subject: d.subject,
+  cards: d.cards.length,
+  due: dueCards(d).length,
+  mastery: MASTERY_OVERRIDES[d.id] ?? 50,
+}));
 
 export default function FlashcardsPage() {
   return (

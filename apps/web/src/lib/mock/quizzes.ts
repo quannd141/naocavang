@@ -25,7 +25,7 @@ export const MOCK_QUIZZES: Quiz[] = [
     id: 'qz-toan10',
     title: 'Toán 10 — Bài tập hàm số bậc 2',
     subject: 'Toán',
-    description: '8 câu trắc nghiệm + điền khuyết về hàm số bậc 2',
+    description: '6 câu trắc nghiệm + điền khuyết về hàm số bậc 2',
     difficulty: 'medium',
     timeMinutes: 15,
     questions: [

@@ -66,6 +66,33 @@ export const MOCK_DECKS: FlashcardDeck[] = [
       { id: 's5', front: 'Ngày thống nhất đất nước?', back: '30/4/1975', sm2: { ...SM2_DEFAULTS }, nextReview: due(0) },
     ],
   },
+  {
+    id: 'ielts-idiom',
+    title: 'IELTS — 50 Idioms band 7+',
+    subject: 'IELTS',
+    description: 'Idioms thông dụng dùng trong IELTS Speaking để boost band điểm',
+    cards: [
+      { id: 'i1', front: 'off the top of my head', back: 'không cần suy nghĩ, nói ngay', hint: 'when you say sth without preparation', sm2: { ...SM2_DEFAULTS }, nextReview: due(0) },
+      { id: 'i2', front: 'bear in mind', back: 'lưu ý, ghi nhớ', sm2: { ...SM2_DEFAULTS }, nextReview: due(0) },
+      { id: 'i3', front: 'a piece of cake', back: 'dễ như ăn bánh', sm2: { ...SM2_DEFAULTS }, nextReview: due(1) },
+      { id: 'i4', front: 'hit the books', back: 'học hành chăm chỉ', sm2: { ...SM2_DEFAULTS }, nextReview: due(0) },
+      { id: 'i5', front: 'on cloud nine', back: 'cực kỳ hạnh phúc', sm2: { ...SM2_DEFAULTS }, nextReview: due(2) },
+      { id: 'i6', front: 'cost an arm and a leg', back: 'đắt cắt cổ', sm2: { ...SM2_DEFAULTS }, nextReview: due(0) },
+    ],
+  },
+  {
+    id: 'hoa-hc',
+    title: 'Hoá hữu cơ — Phản ứng đặc trưng',
+    subject: 'Hoá',
+    description: 'Phản ứng đặc trưng của hidrocacbon, ancol, anđehit, axit cacboxylic',
+    cards: [
+      { id: 'h1', front: 'Ankan + Cl₂ (ánh sáng) tạo ra?', back: 'Dẫn xuất halogen + HCl (phản ứng thế)', sm2: { ...SM2_DEFAULTS }, nextReview: due(3) },
+      { id: 'h2', front: 'Anken + HBr tạo ra?', back: 'Dẫn xuất halogen (cộng theo quy tắc Markovnikov)', sm2: { ...SM2_DEFAULTS }, nextReview: due(2) },
+      { id: 'h3', front: 'Ancol + Na tạo ra?', back: 'R−ONa + ½H₂↑', hint: 'Phản ứng thế nhóm OH', sm2: { ...SM2_DEFAULTS }, nextReview: due(5) },
+      { id: 'h4', front: 'Anđehit + AgNO₃/NH₃ tạo ra?', back: 'Ag↓ (tráng gương) + axit cacboxylic + NH₄NO₃', sm2: { ...SM2_DEFAULTS }, nextReview: due(2) },
+      { id: 'h5', front: 'Axit cacboxylic + ancol tạo ra?', back: 'Este + H₂O (phản ứng este hoá, xúc tác H₂SO₄ đặc, đun nóng)', sm2: { ...SM2_DEFAULTS }, nextReview: due(4) },
+    ],
+  },
 ];
 
 export function getMockDeck(id: string): FlashcardDeck | undefined {

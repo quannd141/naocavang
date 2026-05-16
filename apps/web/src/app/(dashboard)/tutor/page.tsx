@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { MarkdownText } from '@/components/chat/MarkdownText';
 import { SUGGESTED_PROMPTS, streamMockResponse } from '@/lib/mock/chat';
 import { cn } from '@/lib/utils';
 
@@ -137,8 +138,12 @@ function ChatBubble({ message }: { message: Message }) {
         {isUser ? '🧑' : '🐠'}
       </div>
       <Card className={cn('max-w-[calc(100%-3rem)]', isUser ? 'bg-brand-50' : '')}>
-        <CardContent className="p-3 text-sm whitespace-pre-wrap break-words">
-          {message.content || <span className="text-muted-foreground italic">đang gõ...</span>}
+        <CardContent className="p-3 text-sm break-words">
+          {message.content ? (
+            <MarkdownText>{message.content}</MarkdownText>
+          ) : (
+            <span className="text-muted-foreground italic">đang gõ...</span>
+          )}
           {message.streaming && <span className="inline-block ml-1 w-2 h-4 bg-brand-600 animate-pulse align-middle" />}
         </CardContent>
       </Card>

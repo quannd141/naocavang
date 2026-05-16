@@ -115,3 +115,25 @@
 3. Quay demo video / chụp screenshot pitch deck với UI hiện tại
 
 Server vẫn đang chạy ở [http://localhost:3000](http://localhost:3000). Quân có thể click thử thêm.
+
+---
+
+## ✅ Bug fixes — 2026-05-16 (commit `[demo] fix(web): all 6 QA bugs`)
+
+| Bug | Status | What changed |
+|-----|--------|-------------|
+| BUG-01 Recent hrefs | ✅ FIXED | `dashboard/page.tsx` RECENT now points to `mm-toan10` / `eng-600` / `qz-ielts-r` (real IDs) |
+| BUG-02 qz-toan10 "8 câu" | ✅ FIXED | Description corrected to "6 câu" in `lib/mock/quizzes.ts` |
+| BUG-03 Markdown bold literal | ✅ FIXED | New [components/chat/MarkdownText.tsx](apps/web/src/components/chat/MarkdownText.tsx) — minimal renderer supporting `**bold**` / `*italic*` / `` `code` `` / lists `-` / paragraphs. Wired into chat bubble. |
+| BUG-04 /library/[id] 404 | ✅ FIXED | New [lib/mock/templates.ts](apps/web/src/lib/mock/templates.ts) (12 templates w/ contents + cross-links) + [(dashboard)/library/[id]/page.tsx](apps/web/src/app/(dashboard)/library/[id]/page.tsx). Each template links to its associated mindmap / deck / quiz when available. |
+| BUG-05 Missing decks | ✅ FIXED | Added `ielts-idiom` (6 cards) + `hoa-hc` (5 cards) to `MOCK_DECKS`. Flashcards page now derives `DECKS` from `MOCK_DECKS` (single source of truth). |
+| BUG-06 Windows postinstall | ⏭ SKIP | Cosmetic — not our code. |
+| **Bonus** | ✅ FIXED | 4 pre-existing TS strict-mode errors (unused `QuizQuestion` import, React Flow NodeProps cast). Lint now: **0 errors**, 12 informational warnings (mostly `noNonNullAssertion`). |
+
+**Verification:**
+- `tsc --noEmit` → 0 errors
+- `biome lint` → 0 errors (12 warnings, non-blocking)
+- `curl` 17 routes → all 200 (including new `/library/t-toan10`, `/flashcards/ielts-idiom`, `/flashcards/hoa-hc`)
+- Chrome DevTools MCP re-test **blocked** — profile lockfile from previous session. Need manual browser refresh OR restart MCP to re-test interactively.
+
+**Quân action needed:** Refresh browser at [http://localhost:3000](http://localhost:3000) (hard refresh `Ctrl+Shift+R` to bust cache) → spot-check the 6 fixes manually. Should take ~3 phút.

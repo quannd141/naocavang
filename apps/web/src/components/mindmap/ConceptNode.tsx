@@ -11,9 +11,10 @@ export interface ConceptNodeData {
 }
 
 function ConceptNodeComponent({ data, selected }: NodeProps) {
-  const color = (data as ConceptNodeData).color ?? '#FFD700';
-  const label = (data as ConceptNodeData).label ?? '';
-  const notes = (data as ConceptNodeData).notes;
+  const d = data as unknown as ConceptNodeData;
+  const color = d.color ?? '#FFD700';
+  const label = d.label ?? '';
+  const notes = d.notes;
   return (
     <div
       className={cn(
