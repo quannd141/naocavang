@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Env files
+.env
+.env.local
+.env.production
+.env.*.local
+!.env.example
+!.env.night-shift
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+.nyc_output/
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Prisma generated
+apps/api/prisma/migrations/dev.db*
+apps/api/src/generated/
+
+# Sentry
+.sentryclirc
+
+# Local data
+*.sqlite
+*.sqlite3
+*.db
+local-uploads/
