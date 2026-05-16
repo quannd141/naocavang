@@ -1,0 +1,371 @@
+// Não Cá Vàng — Prisma Schema v0.1
+// Reference: docs/requirements/SRS-v1.0.md §5 Data Requirements
+//            docs/adr/002-mindmap-storage.md (JSONB for mind map data)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- AUTH & USER ----------
+
+enum UserTier {
+  free
+  premium
+  pro
+  admin
+}
+
+enum UserRole {
+  student_hs
+  student_sv
+  student_ielts
+  lifelong
+  researcher
+  other
+}
+
+model User {
+  id                    String     @id @default(uuid())
+  email                 String     @unique
+  passwordHash          String?    // null if OAuth-only
+  googleId              String?    @unique
+  name                  String
+  avatarUrl             String?
+  tier                  UserTier   @default(free)
+  role                  UserRole?
+  aiQuotaMonthly        Int        @default(50)
+  aiQuotaUsed           Int        @default(0)
+  mindmapQuotaMonthly   Int        @default(10)
+  emailVerifiedAt       DateTime?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  accounts              Account[]
+  sessions              Session[]
+  preferences           UserPreferences?
+  mindmaps              MindMap[]
+  flashcardDecks        FlashcardDeck[]
+  quizAttempts          QuizAttempt[]
+  aiUsageLogs           AiUsageLog[]
+  reviewLogs            ReviewLog[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// NextAuth.js v5 schema (Auth.js)
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model UserPreferences {
+  userId               String   @id
+  preferredSubjects    String[] @default([])
+  reminderEnabled      Boolean  @default(true)
+  reminderTimeHHMM     String   @default("07:00")
+  emailDigestEnabled   Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+// ---------- MIND MAP ----------
+
+enum MindMapSubject {
+  math
+  physics
+  chemistry
+  biology
+  history
+  geography
+  literature
+  english
+  civics
+  informatics
+  ielts
+  toeic
+  other
+}
+
+enum MindMapSourceType {
+  manual
+  pdf
+  text
+  template
+}
+
+model MindMap {
+  id                String              @id @default(uuid())
+  userId            String
+  title             String
+  description       String?             @db.Text
+  // JSONB: full mind map tree per ADR-002
+  // Structure: { version, rootId, nodes: Record<id, Node>, edges, viewport }
+  data              Json
+  subject           MindMapSubject?
+  tags              String[]            @default([])
+  isPublic          Boolean             @default(false)
+  sourceType        MindMapSourceType   @default(manual)
+  sourceTemplateId  String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceTemplate    Template?           @relation(fields: [sourceTemplateId], references: [id])
+  flashcardDecks    FlashcardDeck[]
+  quizzes           Quiz[]
+
+  @@index([userId])
+  @@index([isPublic])
+  @@index([subject])
+  @@map("mindmaps")
+}
+
+// ---------- TEMPLATE LIBRARY ----------
+
+model Template {
+  id           String              @id @default(uuid())
+  title        String
+  description  String              @db.Text
+  data         Json                // Same shape as MindMap.data
+  subject      MindMapSubject?
+  gradeLevel   String?             // e.g., "grade-12", "uni-1"
+  tags         String[]            @default([])
+  authorName   String              @default("Não Cá Vàng")
+  isSystem     Boolean             @default(false)
+  useCount     Int                 @default(0)
+  likeCount    Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  mindmaps     MindMap[]
+
+  @@index([subject])
+  @@index([isSystem])
+  @@map("templates")
+}
+
+// ---------- FLASHCARD + SPACED REPETITION ----------
+
+enum FlashcardFormat {
+  qa
+  cloze
+  mcq
+}
+
+model FlashcardDeck {
+  id          String      @id @default(uuid())
+  mindmapId   String
+  userId      String
+  title       String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  mindmap     MindMap     @relation(fields: [mindmapId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards       Flashcard[]
+
+  @@index([userId])
+  @@index([mindmapId])
+  @@map("flashcard_decks")
+}
+
+model Flashcard {
+  id              String          @id @default(uuid())
+  deckId          String
+  question        String          @db.Text
+  answer          String          @db.Text
+  format          FlashcardFormat @default(qa)
+  // SM-2 state (ADR-004)
+  easeFactor      Decimal         @default(2.5) @db.Decimal(4, 2)
+  interval        Int             @default(0)
+  repetitions     Int             @default(0)
+  nextReviewAt    DateTime        @default(now())
+  lastReviewedAt  DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  deck            FlashcardDeck   @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  reviewLogs      ReviewLog[]
+
+  @@index([deckId])
+  @@index([nextReviewAt])
+  @@map("flashcards")
+}
+
+model ReviewLog {
+  id                String    @id @default(uuid())
+  flashcardId       String
+  userId            String
+  quality           Int       // 0-4 user self-rating
+  intervalBefore    Int
+  intervalAfter     Int
+  easeFactorBefore  Decimal   @db.Decimal(4, 2)
+  easeFactorAfter   Decimal   @db.Decimal(4, 2)
+  reviewedAt        DateTime  @default(now())
+
+  flashcard         Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([flashcardId, reviewedAt])
+  @@index([userId, reviewedAt])
+  @@map("review_logs")
+}
+
+// ---------- QUIZ ----------
+
+enum QuizQuestionType {
+  multiple_choice
+  cloze
+  short_answer
+}
+
+enum QuizDifficulty {
+  easy
+  medium
+  hard
+}
+
+model Quiz {
+  id          String          @id @default(uuid())
+  mindmapId   String
+  title       String
+  difficulty  QuizDifficulty  @default(medium)
+  createdAt   DateTime        @default(now())
+
+  mindmap     MindMap         @relation(fields: [mindmapId], references: [id], onDelete: Cascade)
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+
+  @@index([mindmapId])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String           @id @default(uuid())
+  quizId        String
+  type          QuizQuestionType
+  question      String           @db.Text
+  options       Json?            // For MCQ: array of strings
+  correctAnswer String           @db.Text
+  explanation   String?          @db.Text
+  position      Int
+
+  quiz          Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id             String   @id @default(uuid())
+  quizId         String
+  userId         String
+  score          Int      // 0-100
+  answersJson    Json     // user answers per question
+  timeSpentSec   Int?
+  completedAt    DateTime @default(now())
+
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt])
+  @@map("quiz_attempts")
+}
+
+// ---------- AI USAGE LOG ----------
+
+enum AiOperation {
+  mindmap_gen
+  flashcard_gen
+  quiz_gen
+}
+
+enum AiStatus {
+  pending
+  processing
+  success
+  failed
+}
+
+model AiUsageLog {
+  id            String       @id @default(uuid())
+  userId        String
+  operation     AiOperation
+  model         String       // 'gemini-flash-2.0', 'claude-haiku-4-5', 'mock', ...
+  inputTokens   Int          @default(0)
+  outputTokens  Int          @default(0)
+  costUsd       Decimal      @default(0) @db.Decimal(10, 6)
+  latencyMs     Int?
+  status        AiStatus     @default(pending)
+  errorMessage  String?      @db.Text
+  createdAt     DateTime     @default(now())
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("ai_usage_logs")
+}
+
+// ---------- AUDIT LOG ----------
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String?
+  action      String    // 'user.login', 'mindmap.delete', 'admin.tier_change', ...
+  resourceType String?
+  resourceId  String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@map("audit_logs")
+}
