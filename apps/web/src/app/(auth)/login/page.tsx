@@ -1,58 +1,98 @@
+'use client';
+
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { mockGoogleLogin, mockLogin } from '@/lib/mock/auth';
 
-export const metadata = {
-  title: 'Đăng nhập',
-};
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function LoginPage() {
-  const t = await getTranslations('auth');
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!email || !password) {
+      setError('Vui lòng điền đầy đủ email và mật khẩu');
+      return;
+    }
+    setLoading(true);
+    try {
+      await mockLogin(email, password);
+      router.push('/dashboard');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onGoogle() {
+    setLoading(true);
+    try {
+      await mockGoogleLogin();
+      router.push('/dashboard');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 shadow-sm">
-        <h1 className="text-3xl font-bold tracking-tight">{t('loginTitle')}</h1>
-        <p className="mt-2 text-muted-foreground">
-          {t('noAccount')}{' '}
-          <Link href="/register" className="font-medium text-brand-600 hover:underline">
-            {t('switchToRegister')}
+    <main className="flex min-h-screen items-center justify-center px-4 py-12 bg-gradient-to-br from-brand-50 to-background">
+      <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 shadow-lg">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl mb-6">
+          <span className="text-3xl">🧠🐠</span>
+          <span>Não Cá Vàng</span>
+        </Link>
+
+        <h1 className="text-3xl font-bold tracking-tight">Đăng nhập</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Chưa có tài khoản?{' '}
+          <Link href="/register" className="font-medium text-brand-700 hover:underline">
+            Đăng ký miễn phí
           </Link>
         </p>
 
-        {/* TODO(NS-07): wire up NextAuth credentials provider when Google OAuth credentials available */}
-        <form className="mt-8 space-y-4" action="/api/auth/callback/credentials" method="POST">
-          <div>
-            <label htmlFor="email" className="text-sm font-medium">
-              {t('emailLabel')}
-            </label>
-            <input
+        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
               id="email"
-              name="email"
               type="email"
-              required
               autoComplete="email"
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+              placeholder="ban@gmail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div>
-            <label htmlFor="password" className="text-sm font-medium">
-              {t('passwordLabel')}
-            </label>
-            <input
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Mật khẩu</Label>
+              <Link href="/forgot-password" className="text-xs text-muted-foreground hover:underline">
+                Quên mật khẩu?
+              </Link>
+            </div>
+            <Input
               id="password"
-              name="password"
               type="password"
-              required
               autoComplete="current-password"
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-brand-500 px-4 py-2 font-semibold hover:bg-brand-400"
-          >
-            {t('submitLogin')}
-          </button>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          </Button>
         </form>
 
         <div className="my-6 flex items-center gap-4">
@@ -61,20 +101,19 @@ export default async function LoginPage() {
           <div className="h-px flex-1 bg-border" />
         </div>
 
-        {/* TODO(NS-07): wire up Google OAuth when credentials provisioned (xem PENDING_HUMAN) */}
-        <button
+        <Button
           type="button"
-          className="w-full rounded-md border border-border px-4 py-2 font-medium hover:bg-muted"
-          disabled
-          title="Google OAuth chưa cấu hình — cần credentials Google Cloud"
+          variant="outline"
+          className="w-full"
+          size="lg"
+          onClick={onGoogle}
+          disabled={loading}
         >
-          {t('googleButton')} (chưa cấu hình)
-        </button>
+          <span>🔵</span> Tiếp tục với Google (demo)
+        </Button>
 
-        <p className="mt-6 text-center text-sm">
-          <Link href="/forgot-password" className="text-muted-foreground hover:underline">
-            {t('forgotPassword')}
-          </Link>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          🎭 Demo mode — bất kỳ email/password nào cũng đăng nhập được. Mọi thứ lưu localStorage.
         </p>
       </div>
     </main>
