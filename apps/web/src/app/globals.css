@@ -10,6 +10,7 @@
     --muted-foreground: 215 16% 47%;
     --border: 214 32% 91%;
     --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
     --radius: 0.5rem;
   }
 
@@ -20,6 +21,7 @@
     --muted-foreground: 215 20% 65%;
     --border: 217 33% 17%;
     --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
   }
 
   body {

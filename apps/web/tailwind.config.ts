@@ -26,7 +26,10 @@ const config: Config = {
           foreground: 'hsl(var(--muted-foreground))',
         },
         border: 'hsl(var(--border))',
-        card: 'hsl(var(--card))',
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
