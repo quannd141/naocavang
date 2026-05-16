@@ -1,14 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GeminiAdapter } from './infrastructure/gemini.adapter';
-import { MockAiAdapter } from './infrastructure/mock-ai.adapter';
+import { AuthModule } from '../auth/auth.module';
+import { UserModule } from '../user/user.module';
+import { AiRoutingService } from './application/ai-routing.service';
 import { AI_PROVIDERS_TOKEN } from './domain/ports/ai-provider.port';
 import type { AiProvider } from './domain/ports/ai-provider.port';
-import { AiRoutingService } from './application/ai-routing.service';
-import { UserModule } from '../user/user.module';
+import { GeminiAdapter } from './infrastructure/gemini.adapter';
+import { MockAiAdapter } from './infrastructure/mock-ai.adapter';
+import { AiController } from './presentation/ai.controller';
 
 @Module({
-  imports: [UserModule],
+  imports: [UserModule, AuthModule],
+  controllers: [AiController],
   providers: [
     AiRoutingService,
     MockAiAdapter,

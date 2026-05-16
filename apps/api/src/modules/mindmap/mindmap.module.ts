@@ -1,14 +1,12 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
+import { MindMapService } from './application/mindmap.service';
+import { MindMapController } from './presentation/mindmap.controller';
 
-/**
- * Mind map module — full implementation in Sprint 2.
- * Currently scaffolded only.
- *
- * Will contain:
- *   - domain/        mindmap.entity, node.entity, mindmap.repository (port)
- *   - application/   create-mindmap.service, get-mindmap.service, ...
- *   - infrastructure/ prisma-mindmap.repository
- *   - presentation/  mindmap.controller, dto/
- */
-@Module({})
+@Module({
+  imports: [AuthModule],
+  controllers: [MindMapController],
+  providers: [MindMapService],
+  exports: [MindMapService],
+})
 export class MindmapModule {}

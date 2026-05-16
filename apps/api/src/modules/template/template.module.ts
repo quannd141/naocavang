@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { TemplateController } from './presentation/template.controller';
 
-/** Template module — full implementation in Sprint 2 (FR-060, FR-061). */
-@Module({})
+@Module({
+  controllers: [TemplateController],
+})
 export class TemplateModule {}

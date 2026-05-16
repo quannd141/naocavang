@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { UserModule } from '../user/user.module';
+import { LoginService } from './application/login.service';
 import { RegisterService } from './application/register.service';
-import { AuthController } from './presentation/auth.controller';
 import { PasswordHasher } from './infrastructure/password-hasher';
+import { SessionAuthGuard } from './infrastructure/session-auth.guard';
+import { AuthController } from './presentation/auth.controller';
 
 @Module({
-  imports: [UserModule],
   controllers: [AuthController],
-  providers: [RegisterService, PasswordHasher],
-  exports: [RegisterService],
+  providers: [RegisterService, LoginService, PasswordHasher, SessionAuthGuard],
+  exports: [RegisterService, LoginService, SessionAuthGuard, PasswordHasher],
 })
 export class AuthModule {}

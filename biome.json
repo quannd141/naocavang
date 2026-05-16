@@ -41,7 +41,8 @@
       "style": {
         "useConst": "error",
         "useTemplate": "warn",
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "warn",
+        "useImportType": "off"
       },
       "complexity": {
         "noUselessTypeConstraint": "error"
