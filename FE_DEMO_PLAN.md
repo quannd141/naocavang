@@ -205,13 +205,14 @@ Khi BE sẵn sàng (sau khi Quân xử lý PENDING_HUMAN):
 
 ## 📊 Progress tracker
 
-- [ ] Phase 1 — UI Foundation + Landing
-- [ ] Phase 2 — Mock auth
-- [ ] Phase 3 — Dashboard shell
-- [ ] Phase 4 — Mind map editor ⭐
-- [ ] Phase 5 — Flashcard study
-- [ ] Phase 6 — Quiz player
-- [ ] Phase 7 — AI Chat tutor
-- [ ] Phase 8 — Library + Settings + polish
+- [x] Phase 1 — UI Foundation + Landing ✅ 2026-05-16
+- [x] Phase 2 — Mock auth ✅ 2026-05-16
+- [x] Phase 3 — Dashboard shell ✅ 2026-05-16
+- [x] Phase 4 — Mind map editor ⭐ ✅ 2026-05-16
+- [x] Phase 5 — Flashcard study ✅ 2026-05-16
+- [x] Phase 6 — Quiz player ✅ 2026-05-16
+- [x] Phase 7 — AI Chat tutor ✅ 2026-05-16
+- [ ] Phase 8 — Library + Settings + polish (settings done — chỉ còn responsive polish + 404 + toast)
 
-Tech Lead sẽ commit từng phase atomic. Mỗi commit kèm screenshot/note nếu có.
+**Done in 1 session — branch `night-shift/sprint-1-20260516`.**
+Tech Lead commits atomic per phase. Quân `pnpm install && pnpm --filter web dev` → demo ngay.
