@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
 import type { AuthedUser } from '../../auth/infrastructure/session-auth.guard';
 import { SessionAuthGuard } from '../../auth/infrastructure/session-auth.guard';
+import { ExportService } from '../application/export.service';
 import { StatsService } from '../application/stats.service';
 import { UserService } from '../application/user.service';
 import { ChangePasswordDto, UpdateMeDto } from './dto/update-user.dto';
@@ -15,6 +16,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly statsService: StatsService,
+    private readonly exportService: ExportService,
   ) {}
 
   @Get('me')
@@ -56,6 +58,16 @@ export class UserController {
         tier: user.tier,
       },
     };
+  }
+
+  @Get('me/export')
+  @ApiOperation({
+    summary:
+      'Export all user data (mindmaps + decks + quizzes + attempts) as JSON — PDPA compliance',
+  })
+  async exportData(@CurrentUser() current: AuthedUser) {
+    const data = await this.exportService.exportUserData(current.id);
+    return { success: true, data };
   }
 
   @Post('me/change-password')

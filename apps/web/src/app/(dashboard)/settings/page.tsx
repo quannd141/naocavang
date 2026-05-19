@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useMockSession } from '@/lib/mock/use-session';
 import { ApiError, clearApiToken, userApi } from '@/lib/api-client';
+import { Download } from 'lucide-react';
 import { setMockSession } from '@/lib/mock/auth';
 
 const TIERS = [
@@ -35,6 +36,42 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPw, setSavingPw] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  // Export state
+  const [exporting, setExporting] = useState(false);
+  const [exportMsg, setExportMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  async function handleExport() {
+    setExporting(true);
+    setExportMsg(null);
+    try {
+      const bundle = await userApi.exportData();
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], {
+        type: 'application/json;charset=utf-8',
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      const filename = `nao-ca-vang-export-${stamp}.json`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportMsg({
+        kind: 'ok',
+        text: `Đã tải về ${filename} — ${bundle.mindmaps.length} mindmaps, ${bundle.flashcardDecks.length} decks, ${bundle.quizzes.length} quizzes.`,
+      });
+    } catch (err) {
+      setExportMsg({
+        kind: 'err',
+        text: err instanceof ApiError ? err.message : (err as Error).message,
+      });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     if (user?.name && name === '') setName(user.name);
@@ -242,27 +279,36 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Danger zone — placeholders */}
+        {/* Data portability + danger zone */}
         <Card>
           <CardHeader>
-            <CardTitle>Khu vực nguy hiểm</CardTitle>
-            <CardDescription>Các tính năng dưới đây sẽ có ở Sprint sau</CardDescription>
+            <CardTitle>Dữ liệu của bạn</CardTitle>
+            <CardDescription>Theo Nghị định 13/2023 PDPA — bạn có quyền tải về dữ liệu</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="min-w-0">
                 <div className="font-medium">Export dữ liệu</div>
-                <div className="text-sm text-muted-foreground">Tải về tất cả mind map, flashcard, quiz</div>
+                <div className="text-sm text-muted-foreground">
+                  Tải về JSON bundle: tất cả mind map, deck, quiz, attempts.
+                </div>
               </div>
-              <Button variant="outline" disabled>
-                Export JSON (sắp ra)
+              <Button variant="outline" onClick={handleExport} disabled={exporting}>
+                <Download className="h-4 w-4" /> {exporting ? 'Đang tải...' : 'Export JSON'}
               </Button>
             </div>
-            <div className="flex items-center justify-between">
-              <div>
+            {exportMsg && (
+              <div className={`text-sm ${exportMsg.kind === 'ok' ? 'text-green-700' : 'text-red-700'}`}>
+                {exportMsg.kind === 'ok' ? '✓ ' : '⚠️ '}
+                {exportMsg.text}
+              </div>
+            )}
+            <hr className="my-3 border-border" />
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="min-w-0">
                 <div className="font-medium text-red-700">Xoá tài khoản</div>
                 <div className="text-sm text-muted-foreground">
-                  Xoá vĩnh viễn theo Nghị định 13/2023 PDPA
+                  Xoá vĩnh viễn — chưa hỗ trợ ở Sprint này.
                 </div>
               </div>
               <Button variant="destructive" disabled>

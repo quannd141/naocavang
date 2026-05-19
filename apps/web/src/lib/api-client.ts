@@ -167,11 +167,21 @@ export const statsApi = {
   me: () => apiRequest<UserStats>('/users/me/stats'),
 };
 
+export interface UserExport {
+  exportedAt: string;
+  schemaVersion: number;
+  user: { id: string; email: string; name: string; tier: string; createdAt: string };
+  mindmaps: unknown[];
+  flashcardDecks: unknown[];
+  quizzes: unknown[];
+}
+
 export const userApi = {
   updateMe: (input: { name: string }) =>
     apiRequest<AuthUser>('/users/me', { method: 'PATCH', body: input }),
   changePassword: (input: { oldPassword: string; newPassword: string }) =>
     apiRequest<void>('/users/me/change-password', { method: 'POST', body: input }),
+  exportData: () => apiRequest<UserExport>('/users/me/export'),
 };
 
 export interface MindMapSummary {
