@@ -265,6 +265,81 @@ export interface ReviewResult {
   nextReviewAt: string;
 }
 
+// ---------- Quiz ----------
+
+export type QuizQuestionType = 'multiple_choice' | 'cloze' | 'short_answer';
+
+export interface QuizSummary {
+  id: string;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  mindmapId: string;
+  mindmapTitle: string;
+  subject: string | null;
+  questionCount: number;
+  attemptCount: number;
+  createdAt: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  type: QuizQuestionType;
+  question: string;
+  options: string[] | null;
+  position: number;
+  correctAnswer?: string;
+  explanation?: string | null;
+}
+
+export interface QuizFull {
+  id: string;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  mindmapId: string;
+  mindmap: { id: string; title: string; subject: string | null };
+  questions: QuizQuestion[];
+  createdAt: string;
+}
+
+export interface QuizAttemptResult {
+  attemptId: string;
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+  results: Array<{
+    questionId: string;
+    type: QuizQuestionType;
+    question: string;
+    options: string[] | null;
+    userAnswer: string;
+    correctAnswer: string;
+    explanation: string | null;
+    correct: boolean;
+  }>;
+  wrongAnswersAddedToDeckId: string | null;
+}
+
+export const quizApi = {
+  list: () => apiRequest<QuizSummary[]>('/quizzes'),
+  get: (id: string, reveal = false) =>
+    apiRequest<QuizFull>(`/quizzes/${id}${reveal ? '?reveal=true' : ''}`),
+  createFromMindmap: (mindmapId: string, opts?: { title?: string; difficulty?: 'easy' | 'medium' | 'hard' }) =>
+    apiRequest<QuizFull>(`/quizzes/from-mindmap/${mindmapId}`, {
+      method: 'POST',
+      body: opts ?? {},
+    }),
+  delete: (id: string) => apiRequest<void>(`/quizzes/${id}`, { method: 'DELETE' }),
+  submit: (
+    quizId: string,
+    answers: Array<{ questionId: string; answer: string }>,
+    timeSpentSec?: number,
+  ) =>
+    apiRequest<QuizAttemptResult>(`/quizzes/${quizId}/attempts`, {
+      method: 'POST',
+      body: { answers, timeSpentSec },
+    }),
+};
+
 export const flashcardApi = {
   listDecks: () => apiRequest<FlashcardDeckSummary[]>('/flashcards/decks'),
   getDeck: (id: string) => apiRequest<FlashcardDeckFull>(`/flashcards/decks/${id}`),
