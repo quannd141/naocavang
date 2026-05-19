@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, RefreshCw, Search } from 'lucide-react';
+import { Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,23 @@ export default function MindMapsPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [subject, setSubject] = useState<string>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(e: React.MouseEvent, mm: MindMapSummary) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Xoá mind map "${mm.title}"? Hành động này không thể hoàn tác.`)) return;
+    setDeletingId(mm.id);
+    setError(null);
+    try {
+      await mindmapApi.delete(mm.id);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : (err as Error).message);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function load() {
     setError(null);
@@ -184,20 +201,32 @@ export default function MindMapsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(filtered ?? []).map((mm) => (
-            <Link key={mm.id} href={`/mindmaps/${mm.id}`}>
-              <Card className="hover:border-brand-400 hover:shadow-md transition-all cursor-pointer h-full">
-                <div className="aspect-video bg-gradient-to-br from-brand-100 to-brand-50 flex items-center justify-center text-5xl">
-                  🗺️
-                </div>
-                <CardContent className="p-4">
-                  <div className="text-xs font-medium text-brand-700">
-                    {mm.subject ? SUBJECT_LABEL[mm.subject] ?? mm.subject : 'Tổng hợp'}
+            <div key={mm.id} className="relative group">
+              <Link href={`/mindmaps/${mm.id}`}>
+                <Card className="hover:border-brand-400 hover:shadow-md transition-all cursor-pointer h-full">
+                  <div className="aspect-video bg-gradient-to-br from-brand-100 to-brand-50 flex items-center justify-center text-5xl">
+                    🗺️
                   </div>
-                  <div className="font-semibold mt-1 line-clamp-2">{mm.title}</div>
-                  <div className="text-xs text-muted-foreground mt-2">{timeAgo(mm.updatedAt)}</div>
-                </CardContent>
-              </Card>
-            </Link>
+                  <CardContent className="p-4">
+                    <div className="text-xs font-medium text-brand-700">
+                      {mm.subject ? SUBJECT_LABEL[mm.subject] ?? mm.subject : 'Tổng hợp'}
+                    </div>
+                    <div className="font-semibold mt-1 line-clamp-2 pr-8">{mm.title}</div>
+                    <div className="text-xs text-muted-foreground mt-2">{timeAgo(mm.updatedAt)}</div>
+                  </CardContent>
+                </Card>
+              </Link>
+              <button
+                type="button"
+                onClick={(e) => handleDelete(e, mm)}
+                disabled={deletingId === mm.id}
+                title="Xoá mind map"
+                aria-label={`Xoá ${mm.title}`}
+                className="absolute top-2 right-2 h-8 w-8 rounded-md bg-white/90 border border-border opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           ))}
 
           <Link href="/mindmaps/new">
