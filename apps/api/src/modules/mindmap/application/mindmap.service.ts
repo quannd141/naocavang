@@ -1,10 +1,28 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ZodError } from 'zod';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
+import { mindMapDataSchema } from '../domain/mindmap-data.schema';
 import type { CreateMindMapDto, UpdateMindMapDto } from '../presentation/dto/mindmap.dto';
 
 @Injectable()
 export class MindMapService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private validateData(data: unknown): void {
+    try {
+      mindMapDataSchema.parse(data);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const issues = err.issues.slice(0, 5).map((i) => `${i.path.join('.')}: ${i.message}`);
+        throw new BadRequestException({
+          code: 'INVALID_MINDMAP_DATA',
+          message: 'Cấu trúc mind map không hợp lệ',
+          issues,
+        });
+      }
+      throw err;
+    }
+  }
 
   async listMine(userId: string) {
     return this.prisma.mindMap.findMany({
@@ -35,6 +53,7 @@ export class MindMapService {
   }
 
   async create(userId: string, dto: CreateMindMapDto) {
+    this.validateData(dto.data);
     return this.prisma.mindMap.create({
       data: {
         userId,
@@ -75,6 +94,7 @@ export class MindMapService {
     const existing = await this.prisma.mindMap.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException({ code: 'MINDMAP_NOT_FOUND' });
     if (existing.userId !== userId) throw new ForbiddenException({ code: 'MINDMAP_ACCESS_DENIED' });
+    if (dto.data !== undefined) this.validateData(dto.data);
     return this.prisma.mindMap.update({
       where: { id },
       data: {
