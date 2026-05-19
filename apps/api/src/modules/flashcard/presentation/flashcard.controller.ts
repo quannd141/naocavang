@@ -16,6 +16,7 @@ import { CurrentUser } from '../../auth/presentation/decorators/current-user.dec
 import { SessionAuthGuard, type AuthedUser } from '../../auth/infrastructure/session-auth.guard';
 import { FlashcardService } from '../application/flashcard.service';
 import {
+  AddCardsDto,
   CreateDeckDto,
   CreateDeckFromMindMapDto,
   ReviewCardDto,
@@ -81,6 +82,25 @@ export class FlashcardController {
   @ApiOperation({ summary: 'Delete deck' })
   async deleteDeck(@Param('id') id: string, @CurrentUser() user: AuthedUser) {
     await this.service.deleteDeck(id, user.id);
+  }
+
+  @Post('decks/:id/cards')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Append cards to an existing deck (manual add)' })
+  async addCards(
+    @Param('id') deckId: string,
+    @Body() dto: AddCardsDto,
+    @CurrentUser() user: AuthedUser,
+  ) {
+    const result = await this.service.addCardsToDeck(deckId, user.id, dto.cards);
+    return { success: true, data: result };
+  }
+
+  @Delete('cards/:cardId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a single card' })
+  async deleteCard(@Param('cardId') cardId: string, @CurrentUser() user: AuthedUser) {
+    await this.service.deleteCard(cardId, user.id);
   }
 
   // ---------- Study session ----------

@@ -70,6 +70,15 @@ export class ReviewCardDto {
   quality!: 0 | 1 | 2 | 3 | 4;
 }
 
+export class AddCardsDto {
+  @ApiProperty({ type: [CreateCardInput], minItems: 1 })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CreateCardInput)
+  cards!: CreateCardInput[];
+}
+
 export class CreateDeckFromMindMapDto {
   @ApiPropertyOptional({ example: 'Deck từ mind map A' })
   @IsOptional()

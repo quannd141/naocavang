@@ -364,4 +364,14 @@ export const flashcardApi = {
       method: 'POST',
       body: { quality },
     }),
+  addCards: (
+    deckId: string,
+    cards: Array<{ question: string; answer: string; format?: 'qa' | 'cloze' | 'mcq' }>,
+  ) =>
+    apiRequest<{ count: number }>(`/flashcards/decks/${deckId}/cards`, {
+      method: 'POST',
+      body: { cards },
+    }),
+  deleteCard: (cardId: string) =>
+    apiRequest<void>(`/flashcards/cards/${cardId}`, { method: 'DELETE' }),
 };

@@ -30,6 +30,8 @@ interface PrismaMock {
     findUnique: Mock;
     update: Mock;
     groupBy: Mock;
+    createMany: Mock;
+    delete: Mock;
   };
   reviewLog: {
     create: Mock;
@@ -54,6 +56,8 @@ function createPrismaMock(): PrismaMock {
       findUnique: vi.fn(),
       update: vi.fn(),
       groupBy: vi.fn(),
+      createMany: vi.fn(),
+      delete: vi.fn(),
     },
     reviewLog: { create: vi.fn() },
     mindMap: { findUnique: vi.fn() },
@@ -304,6 +308,63 @@ describe('FlashcardService', () => {
       prisma.flashcardDeck.delete.mockResolvedValue({});
       await service.deleteDeck('d1', USER_A);
       expect(prisma.flashcardDeck.delete).toHaveBeenCalledWith({ where: { id: 'd1' } });
+    });
+  });
+
+  describe('addCardsToDeck', () => {
+    it('rejects deck of another user', async () => {
+      prisma.flashcardDeck.findUnique.mockResolvedValue({ id: 'd1', userId: USER_B });
+      await expect(
+        service.addCardsToDeck('d1', USER_A, [{ question: 'q', answer: 'a' }]),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(prisma.flashcard.createMany).not.toHaveBeenCalled();
+    });
+
+    it('returns count=0 without DB writes when input is empty', async () => {
+      prisma.flashcardDeck.findUnique.mockResolvedValue({ id: 'd1', userId: USER_A });
+      const result = await service.addCardsToDeck('d1', USER_A, []);
+      expect(result).toEqual({ count: 0 });
+      expect(prisma.flashcard.createMany).not.toHaveBeenCalled();
+      expect(prisma.flashcardDeck.update).not.toHaveBeenCalled();
+    });
+
+    it('createMany + bumps deck.updatedAt for owner', async () => {
+      prisma.flashcardDeck.findUnique.mockResolvedValue({ id: 'd1', userId: USER_A });
+      prisma.flashcard.createMany.mockResolvedValue({ count: 2 });
+      prisma.flashcardDeck.update.mockResolvedValue({});
+
+      const result = await service.addCardsToDeck('d1', USER_A, [
+        { question: 'q1', answer: 'a1' },
+        { question: 'q2', answer: 'a2', format: 'cloze' },
+      ]);
+
+      expect(result).toEqual({ count: 2 });
+      const createArg = prisma.flashcard.createMany.mock.calls[0][0] as {
+        data: Array<{ deckId: string; format: string }>;
+      };
+      expect(createArg.data[0]).toMatchObject({ deckId: 'd1', format: 'qa' });
+      expect(createArg.data[1]).toMatchObject({ format: 'cloze' });
+      expect(prisma.flashcardDeck.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteCard', () => {
+    it('rejects card whose deck belongs to another user', async () => {
+      prisma.flashcard.findUnique.mockResolvedValue({ id: 'c1', deck: { userId: USER_B } });
+      await expect(service.deleteCard('c1', USER_A)).rejects.toBeInstanceOf(ForbiddenException);
+      expect(prisma.flashcard.delete).not.toHaveBeenCalled();
+    });
+
+    it('deletes when owner', async () => {
+      prisma.flashcard.findUnique.mockResolvedValue({ id: 'c1', deck: { userId: USER_A } });
+      prisma.flashcard.delete.mockResolvedValue({});
+      await service.deleteCard('c1', USER_A);
+      expect(prisma.flashcard.delete).toHaveBeenCalledWith({ where: { id: 'c1' } });
+    });
+
+    it('NotFound when card missing', async () => {
+      prisma.flashcard.findUnique.mockResolvedValue(null);
+      await expect(service.deleteCard('missing', USER_A)).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

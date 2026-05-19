@@ -156,6 +156,49 @@ export class FlashcardService {
     await this.prisma.flashcardDeck.delete({ where: { id: deckId } });
   }
 
+  // ---------- Cards (manual CRUD on existing deck) ----------
+
+  /** Append 1+ cards to an existing deck. */
+  async addCardsToDeck(
+    deckId: string,
+    userId: string,
+    cards: Array<{ question: string; answer: string; format?: 'qa' | 'cloze' | 'mcq' }>,
+  ) {
+    const deck = await this.prisma.flashcardDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException({ code: 'DECK_NOT_FOUND' });
+    if (deck.userId !== userId) {
+      throw new ForbiddenException({ code: 'DECK_ACCESS_DENIED' });
+    }
+    if (cards.length === 0) {
+      return { count: 0 };
+    }
+    const result = await this.prisma.flashcard.createMany({
+      data: cards.map((c) => ({
+        deckId,
+        question: c.question,
+        answer: c.answer,
+        format: c.format ?? 'qa',
+      })),
+    });
+    await this.prisma.flashcardDeck.update({
+      where: { id: deckId },
+      data: { updatedAt: new Date() },
+    });
+    return { count: result.count };
+  }
+
+  async deleteCard(cardId: string, userId: string) {
+    const card = await this.prisma.flashcard.findUnique({
+      where: { id: cardId },
+      include: { deck: { select: { userId: true } } },
+    });
+    if (!card) throw new NotFoundException({ code: 'CARD_NOT_FOUND' });
+    if (card.deck.userId !== userId) {
+      throw new ForbiddenException({ code: 'CARD_ACCESS_DENIED' });
+    }
+    await this.prisma.flashcard.delete({ where: { id: cardId } });
+  }
+
   // ---------- Study session ----------
 
   /** Cards whose nextReviewAt is in the past (due now). Default cap 20 per session. */
