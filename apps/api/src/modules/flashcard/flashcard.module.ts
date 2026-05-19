@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
+import { FlashcardService } from './application/flashcard.service';
+import { FlashcardController } from './presentation/flashcard.controller';
 
-/** Flashcard module — full implementation in Sprint 3-4 (FR-030, FR-031, FR-040). */
-@Module({})
+/** Flashcard module — FR-030 deck CRUD + FR-031 SM-2 review (ADR-004). */
+@Module({
+  imports: [AuthModule],
+  controllers: [FlashcardController],
+  providers: [FlashcardService],
+  exports: [FlashcardService],
+})
 export class FlashcardModule {}

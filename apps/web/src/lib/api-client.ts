@@ -219,3 +219,74 @@ export const aiApi = {
       body: { prompt, subject },
     }),
 };
+
+// ---------- Flashcards ----------
+
+export interface FlashcardDeckSummary {
+  id: string;
+  title: string;
+  mindmapId: string;
+  subject: string | null;
+  totalCards: number;
+  dueCards: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FlashcardCard {
+  id: string;
+  deckId: string;
+  question: string;
+  answer: string;
+  format: 'qa' | 'cloze' | 'mcq';
+  easeFactor: string;
+  interval: number;
+  repetitions: number;
+  nextReviewAt: string;
+  lastReviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FlashcardDeckFull {
+  id: string;
+  title: string;
+  mindmapId: string;
+  userId: string;
+  cards: FlashcardCard[];
+  mindmap: { id: string; title: string; subject: string | null };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewResult {
+  card: FlashcardCard;
+  sm2: { easeFactor: number; interval: number; repetitions: number };
+  nextReviewAt: string;
+}
+
+export const flashcardApi = {
+  listDecks: () => apiRequest<FlashcardDeckSummary[]>('/flashcards/decks'),
+  getDeck: (id: string) => apiRequest<FlashcardDeckFull>(`/flashcards/decks/${id}`),
+  createDeck: (input: {
+    title: string;
+    mindmapId: string;
+    cards: Array<{ question: string; answer: string; format?: 'qa' | 'cloze' | 'mcq' }>;
+  }) => apiRequest<FlashcardDeckFull>('/flashcards/decks', { method: 'POST', body: input }),
+  createFromMindmap: (mindmapId: string, title?: string) =>
+    apiRequest<FlashcardDeckFull>(`/flashcards/decks/from-mindmap/${mindmapId}`, {
+      method: 'POST',
+      body: title ? { title } : {},
+    }),
+  updateDeck: (id: string, input: { title?: string }) =>
+    apiRequest<FlashcardDeckFull>(`/flashcards/decks/${id}`, { method: 'PATCH', body: input }),
+  deleteDeck: (id: string) =>
+    apiRequest<void>(`/flashcards/decks/${id}`, { method: 'DELETE' }),
+  getDue: (deckId: string, limit = 20) =>
+    apiRequest<FlashcardCard[]>(`/flashcards/decks/${deckId}/due?limit=${limit}`),
+  review: (cardId: string, quality: 0 | 1 | 2 | 3 | 4) =>
+    apiRequest<ReviewResult>(`/flashcards/cards/${cardId}/review`, {
+      method: 'POST',
+      body: { quality },
+    }),
+};
