@@ -217,9 +217,9 @@ describe('FlashcardService', () => {
 
     it('applies SM-2 for quality=3 (Tốt) — first repetition', async () => {
       prisma.flashcard.findUnique.mockResolvedValue(baseCard);
-      prisma.$transaction.mockImplementation(async (ops: unknown[]) => {
+      prisma.$transaction.mockImplementation((async (ops: unknown) => {
         return Promise.all(ops as Promise<unknown>[]);
-      });
+      }) as never);
       prisma.flashcard.update.mockImplementation((args: unknown) => {
         const a = args as { data: { interval: number; repetitions: number; easeFactor: Prisma.Decimal } };
         return Promise.resolve({ ...baseCard, ...a.data });
@@ -249,9 +249,8 @@ describe('FlashcardService', () => {
         interval: 30,
         repetitions: 5,
       });
-      prisma.$transaction.mockImplementation(async (ops: unknown[]) =>
-        Promise.all(ops as Promise<unknown>[]),
-      );
+      prisma.$transaction.mockImplementation((async (ops: unknown) =>
+        Promise.all(ops as Promise<unknown>[])) as never);
       prisma.flashcard.update.mockResolvedValue({});
       prisma.reviewLog.create.mockResolvedValue({});
 
@@ -279,9 +278,8 @@ describe('FlashcardService', () => {
 
     it('computes nextReviewAt as today + interval days', async () => {
       prisma.flashcard.findUnique.mockResolvedValue(baseCard);
-      prisma.$transaction.mockImplementation(async (ops: unknown[]) =>
-        Promise.all(ops as Promise<unknown>[]),
-      );
+      prisma.$transaction.mockImplementation((async (ops: unknown) =>
+        Promise.all(ops as Promise<unknown>[])) as never);
       prisma.flashcard.update.mockResolvedValue({});
       prisma.reviewLog.create.mockResolvedValue({});
 
