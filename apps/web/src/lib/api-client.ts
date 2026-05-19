@@ -202,9 +202,23 @@ export interface MindMapFull extends MindMapSummary {
   data: { nodes: unknown[]; edges: unknown[]; [key: string]: unknown };
 }
 
+export interface PublicMindMap {
+  id: string;
+  title: string;
+  description: string | null;
+  subject: string | null;
+  tags: string[];
+  data: { nodes: unknown[]; edges: unknown[]; [key: string]: unknown };
+  authorName: string;
+  sourceType: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const mindmapApi = {
   list: () => apiRequest<MindMapSummary[]>('/mindmaps'),
   get: (id: string) => apiRequest<MindMapFull>(`/mindmaps/${id}`),
+  getPublic: (id: string) => apiRequest<PublicMindMap>(`/public/mindmaps/${id}`, { noAuth: true }),
   create: (input: {
     title: string;
     description?: string;

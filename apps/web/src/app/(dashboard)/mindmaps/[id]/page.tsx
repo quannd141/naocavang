@@ -15,6 +15,7 @@ interface LoadedMindMap {
   initialEdges: Edge[];
   /** If true, save() will PATCH to BE; otherwise localStorage only (mock seed). */
   remote: boolean;
+  isPublic: boolean;
 }
 
 function toCanvasInputs(data: unknown): { nodes: Node[]; edges: Edge[] } {
@@ -65,6 +66,7 @@ export default function MindMapEditor() {
           initialNodes: nodes,
           initialEdges: edges,
           remote: true,
+          isPublic: remote.isPublic ?? false,
         });
         return;
       } catch (err) {
@@ -106,6 +108,7 @@ export default function MindMapEditor() {
         initialNodes: nodes,
         initialEdges: edges,
         remote: false,
+        isPublic: false,
       });
     }
     load();
@@ -148,12 +151,59 @@ export default function MindMapEditor() {
     }
   }
 
+  async function toggleIsPublic() {
+    if (!state || !state.remote) return;
+    const next = !state.isPublic;
+    setState({ ...state, isPublic: next });
+    try {
+      await mindmapApi.update(state.id, { isPublic: next });
+    } catch (err) {
+      // rollback on failure
+      setState({ ...state, isPublic: !next });
+      setError(err instanceof ApiError ? err.message : (err as Error).message);
+    }
+  }
+
+  function copyShareLink() {
+    if (!state) return;
+    const url = `${window.location.origin}/public/mindmaps/${state.id}`;
+    navigator.clipboard?.writeText(url).catch(() => {});
+    // Briefly show a "copied" hint by reusing the link button's title — handled inline
+  }
+
   return (
-    <MindMapCanvas
-      title={`${state.emoji} ${state.title}${state.remote ? '' : ' (mock)'}`}
-      initialNodes={state.initialNodes}
-      initialEdges={state.initialEdges}
-      onSave={handleSave}
-    />
+    <div className="relative h-screen">
+      {state.remote && (
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2 bg-white/95 backdrop-blur border border-border rounded-md shadow-sm p-2 text-sm">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={state.isPublic}
+              onChange={toggleIsPublic}
+              className="h-4 w-4 accent-brand-500"
+            />
+            <span className="font-medium">
+              {state.isPublic ? '🌍 Public' : '🔒 Private'}
+            </span>
+          </label>
+          {state.isPublic && (
+            <button
+              type="button"
+              onClick={copyShareLink}
+              className="px-2 py-1 rounded bg-brand-500 text-white text-xs font-medium hover:bg-brand-600 active:scale-95 transition"
+              title="Copy public share link"
+            >
+              📋 Copy link
+            </button>
+          )}
+        </div>
+      )}
+      <MindMapCanvas
+        title={`${state.emoji} ${state.title}${state.remote ? '' : ' (mock)'}`}
+        initialNodes={state.initialNodes}
+        initialEdges={state.initialEdges}
+        onSave={handleSave}
+      />
+    </div>
   );
 }

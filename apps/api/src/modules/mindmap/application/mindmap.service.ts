@@ -52,6 +52,33 @@ export class MindMapService {
     return mm;
   }
 
+  /**
+   * Public read-only view — no auth required, only succeeds when isPublic=true.
+   * Author email/name are surfaced so the viewer can give credit.
+   */
+  async getPublic(id: string) {
+    const mm = await this.prisma.mindMap.findUnique({
+      where: { id },
+      include: { user: { select: { name: true } } },
+    });
+    if (!mm || !mm.isPublic) {
+      // 404 (not 403) so we don't leak existence of private mindmaps.
+      throw new NotFoundException({ code: 'PUBLIC_MINDMAP_NOT_FOUND' });
+    }
+    return {
+      id: mm.id,
+      title: mm.title,
+      description: mm.description,
+      subject: mm.subject,
+      tags: mm.tags,
+      data: mm.data,
+      authorName: mm.user.name,
+      sourceType: mm.sourceType,
+      createdAt: mm.createdAt,
+      updatedAt: mm.updatedAt,
+    };
+  }
+
   async create(userId: string, dto: CreateMindMapDto) {
     this.validateData(dto.data);
     return this.prisma.mindMap.create({
