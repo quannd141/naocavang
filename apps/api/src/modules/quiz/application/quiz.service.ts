@@ -1,11 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
+import { matchAnswer } from '../domain/answer-grader';
 import type {
   CreateQuizDto,
   CreateQuizFromMindMapDto,
   SubmitAttemptDto,
 } from '../presentation/dto/quiz.dto';
+
+// Re-export for backward compatibility — existing tests import { matchAnswer } from quiz.service
+export { matchAnswer } from '../domain/answer-grader';
 
 interface ScoredQuestion {
   questionId: string;
@@ -314,29 +318,5 @@ export class QuizService {
   }
 }
 
-/**
- * Compare user answer to correct answer.
- *
- * - multiple_choice: exact match after trim (FE sends the chosen option text)
- * - short_answer / cloze: case-insensitive trimmed equality, OR either side
- *   contains the other when one is short. Permissive on purpose — user may
- *   write "y = ax² + bx + c" while answer is "y=ax^2+bx+c".  Future: fuzzy
- *   match via Levenshtein, swap to LLM grader for free-form questions.
- */
-export function matchAnswer(type: string, userAnswer: string, correctAnswer: string): boolean {
-  const u = userAnswer.trim();
-  const c = correctAnswer.trim();
-  if (u.length === 0 || c.length === 0) return false;
-
-  if (type === 'multiple_choice') {
-    return u.toLowerCase() === c.toLowerCase();
-  }
-
-  // short_answer / cloze — case-insensitive, allow either-side substring
-  const ul = u.toLowerCase();
-  const cl = c.toLowerCase();
-  if (ul === cl) return true;
-  // Reject trivial substring matches like "a"
-  if (Math.min(ul.length, cl.length) < 4) return ul === cl;
-  return ul.includes(cl) || cl.includes(ul);
-}
+// matchAnswer implementation moved to ../domain/answer-grader.ts (S3-02).
+// The re-export above preserves backward compatibility for existing imports.
