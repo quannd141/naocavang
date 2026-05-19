@@ -167,6 +167,13 @@ export const statsApi = {
   me: () => apiRequest<UserStats>('/users/me/stats'),
 };
 
+export const userApi = {
+  updateMe: (input: { name: string }) =>
+    apiRequest<AuthUser>('/users/me', { method: 'PATCH', body: input }),
+  changePassword: (input: { oldPassword: string; newPassword: string }) =>
+    apiRequest<void>('/users/me/change-password', { method: 'POST', body: input }),
+};
+
 export interface MindMapSummary {
   id: string;
   title: string;
