@@ -1,13 +1,36 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Plus, RefreshCw, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { ApiError } from '@/lib/api-client';
 import { type MindMapSummary, mindmapApi } from '@/lib/api-client';
+
+const SUBJECT_FILTERS = [
+  { id: 'all', label: 'Tất cả' },
+  { id: 'math', label: 'Toán' },
+  { id: 'physics', label: 'Lý' },
+  { id: 'chemistry', label: 'Hoá' },
+  { id: 'biology', label: 'Sinh' },
+  { id: 'history', label: 'Sử' },
+  { id: 'geography', label: 'Địa' },
+  { id: 'literature', label: 'Văn' },
+  { id: 'english', label: 'Anh' },
+  { id: 'general', label: 'Tổng hợp' },
+];
+
+function normaliseForSearch(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
+    .toLowerCase();
+}
 
 const SUBJECT_LABEL: Record<string, string> = {
   math: 'Toán',
@@ -36,6 +59,8 @@ function timeAgo(iso: string): string {
 export default function MindMapsPage() {
   const [items, setItems] = useState<MindMapSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [subject, setSubject] = useState<string>('all');
 
   async function load() {
     setError(null);
@@ -51,6 +76,19 @@ export default function MindMapsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const filtered = useMemo(() => {
+    if (!items) return null;
+    const q = normaliseForSearch(query.trim());
+    return items.filter((mm) => {
+      if (subject !== 'all' && (mm.subject ?? 'general') !== subject) return false;
+      if (q.length === 0) return true;
+      const haystack = normaliseForSearch(
+        `${mm.title} ${mm.description ?? ''} ${(mm.tags ?? []).join(' ')}`,
+      );
+      return haystack.includes(q);
+    });
+  }, [items, query, subject]);
 
   return (
     <div className="container mx-auto px-4 lg:px-6 py-8 max-w-6xl">
@@ -79,6 +117,37 @@ export default function MindMapsPage() {
         </Card>
       )}
 
+      {items && items.length > 0 && (
+        <div className="mb-6 flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Tìm theo title, mô tả, tag... (bỏ qua dấu tiếng Việt)"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-1 flex-wrap">
+            {SUBJECT_FILTERS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSubject(s.id)}
+                className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                  subject === s.id
+                    ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
+                    : 'border-border text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {items === null ? (
         <div className="text-muted-foreground">Đang tải...</div>
       ) : items.length === 0 ? (
@@ -92,9 +161,29 @@ export default function MindMapsPage() {
             </Button>
           </CardContent>
         </Card>
+      ) : filtered && filtered.length === 0 ? (
+        <Card className="border-2 border-dashed">
+          <CardContent className="text-center py-12">
+            <div className="text-4xl mb-3">🔍</div>
+            <div className="font-semibold">Không có mind map khớp bộ lọc</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              Thử bỏ filter môn học hoặc xoá từ khoá tìm.
+            </div>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => {
+                setQuery('');
+                setSubject('all');
+              }}
+            >
+              Reset bộ lọc
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((mm) => (
+          {(filtered ?? []).map((mm) => (
             <Link key={mm.id} href={`/mindmaps/${mm.id}`}>
               <Card className="hover:border-brand-400 hover:shadow-md transition-all cursor-pointer h-full">
                 <div className="aspect-video bg-gradient-to-br from-brand-100 to-brand-50 flex items-center justify-center text-5xl">

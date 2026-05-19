@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, RefreshCw, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Plus, RefreshCw, Search, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   ApiError,
@@ -27,11 +28,22 @@ const SUBJECT_LABEL: Record<string, string> = {
   general: 'Tổng hợp',
 };
 
+function normaliseForSearch(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
+    .toLowerCase();
+}
+
 export default function FlashcardsPage() {
   const [decks, setDecks] = useState<FlashcardDeckSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mindmaps, setMindmaps] = useState<MindMapSummary[]>([]);
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
+  const [dueOnly, setDueOnly] = useState(false);
 
   async function load() {
     setError(null);
@@ -48,6 +60,16 @@ export default function FlashcardsPage() {
     load();
     mindmapApi.list().then(setMindmaps).catch(() => setMindmaps([]));
   }, []);
+
+  const filteredDecks = useMemo(() => {
+    if (!decks) return null;
+    const q = normaliseForSearch(query.trim());
+    return decks.filter((d) => {
+      if (dueOnly && d.dueCards === 0) return false;
+      if (q.length === 0) return true;
+      return normaliseForSearch(d.title).includes(q);
+    });
+  }, [decks, query, dueOnly]);
 
   async function generateFromMindmap(mindmapId: string, title: string) {
     setBusy(true);
@@ -129,8 +151,50 @@ export default function FlashcardsPage() {
         </Card>
       ) : (
         <>
+          <div className="mb-6 flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Tìm deck theo title... (bỏ qua dấu)"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setDueOnly((v) => !v)}
+              className={`px-4 py-2 text-sm rounded-md border transition-colors ${
+                dueOnly
+                  ? 'border-orange-500 bg-orange-50 text-orange-700 font-medium'
+                  : 'border-border text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {dueOnly ? '✓ Chỉ deck đến hạn' : 'Chỉ deck đến hạn'}
+            </button>
+          </div>
+
+          {filteredDecks && filteredDecks.length === 0 ? (
+            <Card className="border-2 border-dashed">
+              <CardContent className="text-center py-12">
+                <div className="text-4xl mb-3">🔍</div>
+                <div className="font-semibold">Không có deck khớp bộ lọc</div>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    setQuery('');
+                    setDueOnly(false);
+                  }}
+                >
+                  Reset bộ lọc
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {decks.map((deck) => {
+            {(filteredDecks ?? []).map((deck) => {
               const mastery = computeMastery(deck);
               return (
                 <Card key={deck.id} className="hover:border-brand-400 hover:shadow-md transition-all">
@@ -187,6 +251,7 @@ export default function FlashcardsPage() {
               );
             })}
           </div>
+          )}
 
           {mindmaps.length > 0 && (
             <div className="mt-8">
