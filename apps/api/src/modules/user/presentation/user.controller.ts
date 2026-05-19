@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
 import type { AuthedUser } from '../../auth/infrastructure/session-auth.guard';
 import { SessionAuthGuard } from '../../auth/infrastructure/session-auth.guard';
+import { StatsService } from '../application/stats.service';
 import { UserService } from '../application/user.service';
 
 @ApiTags('users')
@@ -10,7 +11,10 @@ import { UserService } from '../application/user.service';
 @UseGuards(SessionAuthGuard)
 @ApiBearerAuth()
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly statsService: StatsService,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Lấy thông tin user hiện tại + quota AI còn lại' })
@@ -28,5 +32,12 @@ export class UserController {
         emailVerified: user.isEmailVerified,
       },
     };
+  }
+
+  @Get('me/stats')
+  @ApiOperation({ summary: 'Dashboard stats: counts, due cards, streak, recent items' })
+  async stats(@CurrentUser() current: AuthedUser) {
+    const stats = await this.statsService.getUserStats(current.id);
+    return { success: true, data: stats };
   }
 }

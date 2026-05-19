@@ -141,6 +141,32 @@ export const authApi = {
   },
 };
 
+export interface UserStats {
+  mindmapCount: number;
+  deckCount: number;
+  quizCount: number;
+  dueCards: number;
+  reviewsToday: number;
+  streak: number;
+  recentMindmaps: Array<{
+    id: string;
+    title: string;
+    subject: string | null;
+    updatedAt: string;
+  }>;
+  recentDecks: Array<{
+    id: string;
+    title: string;
+    mindmapId: string;
+    dueCards: number;
+    updatedAt: string;
+  }>;
+}
+
+export const statsApi = {
+  me: () => apiRequest<UserStats>('/users/me/stats'),
+};
+
 export interface MindMapSummary {
   id: string;
   title: string;
