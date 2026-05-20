@@ -41,6 +41,35 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [exportMsg, setExportMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
+  // Delete account state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteMsg, setDeleteMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  async function deleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    if (deleteConfirmText.trim().toUpperCase() !== 'XOA') {
+      setDeleteMsg({ kind: 'err', text: 'Gõ chính xác "XOA" để xác nhận' });
+      return;
+    }
+    setDeletingAccount(true);
+    setDeleteMsg(null);
+    try {
+      await userApi.deleteAccount({ password: deletePassword || undefined });
+      clearApiToken();
+      setDeleteMsg({ kind: 'ok', text: 'Đã xoá tài khoản. Đang đưa bạn về trang chủ...' });
+      setTimeout(() => router.push('/'), 1500);
+    } catch (err) {
+      setDeleteMsg({
+        kind: 'err',
+        text: err instanceof ApiError ? err.message : (err as Error).message,
+      });
+      setDeletingAccount(false);
+    }
+  }
+
   async function handleExport() {
     setExporting(true);
     setExportMsg(null);
@@ -308,13 +337,81 @@ export default function SettingsPage() {
               <div className="min-w-0">
                 <div className="font-medium text-red-700">Xoá tài khoản</div>
                 <div className="text-sm text-muted-foreground">
-                  Xoá vĩnh viễn — chưa hỗ trợ ở Sprint này.
+                  Xoá vĩnh viễn cùng toàn bộ mind map, deck, quiz, attempt. Không khôi phục được.
                 </div>
               </div>
-              <Button variant="destructive" disabled>
-                Xoá (sắp ra)
-              </Button>
+              {!deleteOpen && (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setDeleteOpen(true);
+                    setDeleteMsg(null);
+                  }}
+                >
+                  Xoá tài khoản
+                </Button>
+              )}
             </div>
+            {deleteOpen && (
+              <form
+                onSubmit={deleteAccount}
+                className="mt-3 space-y-3 rounded-md border border-red-300 bg-red-50 p-4"
+              >
+                <p className="text-sm text-red-800">
+                  ⚠️ Hành động này <strong>không thể hoàn tác</strong>. Khuyến nghị Export JSON trước.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="deletePassword">Mật khẩu (bắt buộc nếu tài khoản có mật khẩu)</Label>
+                  <Input
+                    id="deletePassword"
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    disabled={deletingAccount}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deleteConfirm">
+                    Gõ <strong>XOA</strong> để xác nhận
+                  </Label>
+                  <Input
+                    id="deleteConfirm"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    disabled={deletingAccount}
+                    required
+                  />
+                </div>
+                {deleteMsg && (
+                  <div
+                    className={`text-sm ${
+                      deleteMsg.kind === 'ok' ? 'text-green-700' : 'text-red-700'
+                    }`}
+                  >
+                    {deleteMsg.kind === 'ok' ? '✓ ' : '⚠️ '}
+                    {deleteMsg.text}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button type="submit" variant="destructive" disabled={deletingAccount}>
+                    {deletingAccount ? 'Đang xoá...' : 'Xoá vĩnh viễn'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={deletingAccount}
+                    onClick={() => {
+                      setDeleteOpen(false);
+                      setDeletePassword('');
+                      setDeleteConfirmText('');
+                      setDeleteMsg(null);
+                    }}
+                  >
+                    Huỷ
+                  </Button>
+                </div>
+              </form>
+            )}
           </CardContent>
         </Card>
 

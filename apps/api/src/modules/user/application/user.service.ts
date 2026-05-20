@@ -73,4 +73,32 @@ export class UserService {
     // Best practice: invalidate other sessions when password changes.
     await this.prisma.session.deleteMany({ where: { userId } });
   }
+
+  /**
+   * Permanently delete the user and every owned record (cascade).
+   * Requires password confirmation for password-auth accounts to prevent
+   * accidental + stolen-session deletion. OAuth-only accounts skip the check
+   * since they have no password to verify against.
+   */
+  async deleteAccount(userId: string, passwordConfirmation?: string): Promise<void> {
+    const record = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!record) throw new NotFoundException({ code: 'USER_NOT_FOUND' });
+    if (record.passwordHash) {
+      if (!passwordConfirmation) {
+        throw new BadRequestException({
+          code: 'PASSWORD_REQUIRED',
+          message: 'Cần nhập mật khẩu để xác nhận xoá tài khoản',
+        });
+      }
+      const ok = await this.hasher.verify(passwordConfirmation, record.passwordHash);
+      if (!ok) {
+        throw new BadRequestException({
+          code: 'WRONG_PASSWORD',
+          message: 'Mật khẩu không đúng',
+        });
+      }
+    }
+    // Cascade-delete handled by schema (sessions, mindmaps, decks, attempts, logs).
+    await this.prisma.user.delete({ where: { id: userId } });
+  }
 }

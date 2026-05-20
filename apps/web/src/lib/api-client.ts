@@ -182,6 +182,8 @@ export const userApi = {
   changePassword: (input: { oldPassword: string; newPassword: string }) =>
     apiRequest<void>('/users/me/change-password', { method: 'POST', body: input }),
   exportData: () => apiRequest<UserExport>('/users/me/export'),
+  deleteAccount: (input: { password?: string }) =>
+    apiRequest<void>('/users/me', { method: 'DELETE', body: input }),
 };
 
 export interface MindMapSummary {

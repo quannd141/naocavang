@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateMeDto {
   @ApiProperty({ example: 'Quân Nguyễn', minLength: 1, maxLength: 100 })
@@ -21,4 +21,15 @@ export class ChangePasswordDto {
   @MinLength(8, { message: 'Mật khẩu mới phải ≥ 8 ký tự' })
   @MaxLength(72)
   newPassword!: string;
+}
+
+export class DeleteAccountDto {
+  @ApiPropertyOptional({
+    description:
+      'Required for password-auth accounts (used to confirm the deletion). OAuth-only accounts can omit.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(72)
+  password?: string;
 }

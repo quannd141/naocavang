@@ -11,7 +11,7 @@ interface UserRepoMock {
   incrementAiQuotaUsed: Mock;
 }
 interface PrismaMock {
-  user: { findUnique: Mock; update: Mock };
+  user: { findUnique: Mock; update: Mock; delete: Mock };
   session: { deleteMany: Mock };
 }
 interface HasherMock {
@@ -26,7 +26,7 @@ function makeMocks() {
     incrementAiQuotaUsed: vi.fn(),
   };
   const prisma: PrismaMock = {
-    user: { findUnique: vi.fn(), update: vi.fn() },
+    user: { findUnique: vi.fn(), update: vi.fn(), delete: vi.fn() },
     session: { deleteMany: vi.fn() },
   };
   const hasher: HasherMock = { hash: vi.fn(), verify: vi.fn() };
@@ -115,5 +115,53 @@ describe('UserService.changePassword', () => {
     await expect(service.changePassword('u1', 'a', 'bbbbbbbb')).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+});
+
+describe('UserService.deleteAccount', () => {
+  it('verifies password then cascade-deletes for password-auth user', async () => {
+    const { service, prisma, hasher } = makeMocks();
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'HASH' });
+    hasher.verify.mockResolvedValue(true);
+    prisma.user.delete.mockResolvedValue({});
+
+    await service.deleteAccount('u1', 'mypw');
+
+    expect(hasher.verify).toHaveBeenCalledWith('mypw', 'HASH');
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+  });
+
+  it('rejects when password missing on password-auth user', async () => {
+    const { service, prisma } = makeMocks();
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'HASH' });
+
+    await expect(service.deleteAccount('u1', undefined)).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('rejects when password wrong', async () => {
+    const { service, prisma, hasher } = makeMocks();
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'HASH' });
+    hasher.verify.mockResolvedValue(false);
+
+    await expect(service.deleteAccount('u1', 'wrong')).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('skips password check for OAuth-only user (no passwordHash)', async () => {
+    const { service, prisma, hasher } = makeMocks();
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: null });
+    prisma.user.delete.mockResolvedValue({});
+
+    await service.deleteAccount('u1', undefined);
+
+    expect(hasher.verify).not.toHaveBeenCalled();
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+  });
+
+  it('throws NotFound when user gone', async () => {
+    const { service, prisma } = makeMocks();
+    prisma.user.findUnique.mockResolvedValue(null);
+    await expect(service.deleteAccount('missing')).rejects.toBeInstanceOf(NotFoundException);
   });
 });

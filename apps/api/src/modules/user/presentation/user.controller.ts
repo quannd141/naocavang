@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
 import type { AuthedUser } from '../../auth/infrastructure/session-auth.guard';
@@ -6,7 +16,7 @@ import { SessionAuthGuard } from '../../auth/infrastructure/session-auth.guard';
 import { ExportService } from '../application/export.service';
 import { StatsService } from '../application/stats.service';
 import { UserService } from '../application/user.service';
-import { ChangePasswordDto, UpdateMeDto } from './dto/update-user.dto';
+import { ChangePasswordDto, DeleteAccountDto, UpdateMeDto } from './dto/update-user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -80,5 +90,18 @@ export class UserController {
     @CurrentUser() current: AuthedUser,
   ): Promise<void> {
     await this.userService.changePassword(current.id, dto.oldPassword, dto.newPassword);
+  }
+
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary:
+      'Permanently delete account + all owned data (PDPA right to be forgotten). Password required for password-auth accounts.',
+  })
+  async deleteAccount(
+    @Body() dto: DeleteAccountDto,
+    @CurrentUser() current: AuthedUser,
+  ): Promise<void> {
+    await this.userService.deleteAccount(current.id, dto.password);
   }
 }
