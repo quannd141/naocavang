@@ -125,6 +125,7 @@ export default function PublicMindMapView() {
         title={`🌍 ${mm.title}`}
         initialNodes={nodes}
         initialEdges={edges}
+        readOnly
       />
     </div>
   );

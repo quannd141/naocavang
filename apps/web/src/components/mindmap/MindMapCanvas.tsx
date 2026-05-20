@@ -28,9 +28,10 @@ interface Props {
   initialEdges: Edge[];
   title: string;
   onSave?: (nodes: Node[], edges: Edge[]) => void;
+  readOnly?: boolean;
 }
 
-export function MindMapCanvas({ initialNodes, initialEdges, title, onSave }: Props) {
+export function MindMapCanvas({ initialNodes, initialEdges, title, onSave, readOnly = false }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -88,56 +89,61 @@ export function MindMapCanvas({ initialNodes, initialEdges, title, onSave }: Pro
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
-      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 flex-wrap gap-2">
-        <div>
-          <h1 className="text-lg font-semibold">{title}</h1>
-          <p className="text-xs text-muted-foreground">
-            {nodes.length} nodes • {edges.length} kết nối
-            {savedAt && ` • Đã lưu ${savedAt.toLocaleTimeString('vi-VN')}`}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={addNode}>
-            <Plus className="h-4 w-4" /> Thêm node
-          </Button>
-          <Button variant="outline" size="sm" onClick={deleteSelected} disabled={!selectedNodeId}>
-            <Trash2 className="h-4 w-4" /> Xoá
-          </Button>
-
-          <div className="flex items-center gap-1 border border-border rounded-md px-2 py-1">
-            <Palette className="h-4 w-4 text-muted-foreground" />
-            {COLOR_PALETTE.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => changeColor(c)}
-                disabled={!selectedNodeId}
-                className="h-5 w-5 rounded-full border border-gray-300 hover:scale-110 transition-transform disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{ background: c }}
-                title={c}
-              />
-            ))}
+    <div className={`flex flex-col ${readOnly ? 'h-full' : 'h-[calc(100vh-4rem)]'}`}>
+      {!readOnly && (
+        <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 flex-wrap gap-2">
+          <div>
+            <h1 className="text-lg font-semibold">{title}</h1>
+            <p className="text-xs text-muted-foreground">
+              {nodes.length} nodes • {edges.length} kết nối
+              {savedAt && ` • Đã lưu ${savedAt.toLocaleTimeString('vi-VN')}`}
+            </p>
           </div>
 
-          <Button size="sm" onClick={handleSave}>
-            <Save className="h-4 w-4" /> Lưu
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={addNode}>
+              <Plus className="h-4 w-4" /> Thêm node
+            </Button>
+            <Button variant="outline" size="sm" onClick={deleteSelected} disabled={!selectedNodeId}>
+              <Trash2 className="h-4 w-4" /> Xoá
+            </Button>
+
+            <div className="flex items-center gap-1 border border-border rounded-md px-2 py-1">
+              <Palette className="h-4 w-4 text-muted-foreground" />
+              {COLOR_PALETTE.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => changeColor(c)}
+                  disabled={!selectedNodeId}
+                  className="h-5 w-5 rounded-full border border-gray-300 hover:scale-110 transition-transform disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: c }}
+                  title={c}
+                />
+              ))}
+            </div>
+
+            <Button size="sm" onClick={handleSave}>
+              <Save className="h-4 w-4" /> Lưu
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 bg-muted/20">
         <ReactFlow
           nodes={styledNodes}
           edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onSelectionChange={onSelectionChange}
+          onNodesChange={readOnly ? undefined : onNodesChange}
+          onEdgesChange={readOnly ? undefined : onEdgesChange}
+          onConnect={readOnly ? undefined : onConnect}
+          onSelectionChange={readOnly ? undefined : onSelectionChange}
           nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{ padding: 0.2 }}
+          nodesDraggable={!readOnly}
+          nodesConnectable={!readOnly}
+          elementsSelectable={!readOnly}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
           <Controls />
