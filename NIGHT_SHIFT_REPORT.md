@@ -2,8 +2,8 @@
 
 **Project**: Não Cá Vàng (`nao-ca-vang`)
 **Mode**: NIGHT_SHIFT_MODE=true (mock AI, local-only, no push)
-**Branch chain**: `night-shift/sprint-2 → 3 → 4 → 5-20260520`
-**Total commits awaiting Quân's review**: **18** across 4 sprints
+**Branch chain**: `night-shift/sprint-2 → 3 → 4 → 5 → 6-20260520`
+**Total commits awaiting Quân's review**: **21** across 5 sprints
 
 > Supersedes the original Sprint-1 night-shift report. That run had its own
 > 3-gate sprint-end-review (see `git log night-shift/sprint-1-20260516` and
@@ -24,12 +24,13 @@ morning.
 | **3** (20/05) | 3 | Dashboard real stats, Levenshtein grader (TEC-08), QA Round 2 |
 | **4** (20/05) | 3 | Settings (change name + password), search/filter (TEC-09), QA Round 3 |
 | **5** (20/05) | 5 | Delete UI, /quizzes search (TEC-11), Export JSON, Public share, QA Round 4 |
+| **6** (20/05) | 3 | Read-only public viewer (TEC-12), PDPA account delete, QA Round 5 |
 
-**API tests**: 95/95 PASS
-**E2E tests**: 21/21 PASS (49s)
-**API operations live**: ~32 (was 16 at end of Sprint 1)
+**API tests**: 100/100 PASS (was 95 — +5 deleteAccount specs)
+**E2E tests**: 26/26 PASS (~72s) (was 21 — +5 round-5 specs)
+**API operations live**: ~33 (was 16 at end of Sprint 1)
 **TS strict**: 0 errors web + api
-**Total LOC added Sprints 2–5**: ~3500+ lines of feature code + tests
+**Total LOC added Sprints 2–6**: ~3700+ lines of feature code + tests
 
 ---
 
@@ -85,6 +86,16 @@ dcb10d5  Public mindmap sharing (isPublic toggle + /public/mindmaps/[id] viewer)
 9db59ca  QA Round 4 (5 specs)
 ```
 
+### Sprint 6 — Tech debt cleanup (`night-shift/sprint-6-20260520`)
+
+```
+5649f41  MindMapCanvas readOnly mode for /public viewer (TEC-12 closed)
+e598ebd  Account delete with cascade + password+"XOA" double confirm (PDPA)
+ed5fe4c  QA Round 5 (5 specs)
+```
+
+**Critical loop verified**: public viewer now read-only (no broken Save button); account delete cascades through sessions, mindmaps, decks, cards, quizzes, attempts, review/AI logs in one transaction.
+
 ---
 
 ## ⚠️ Things to verify in the morning
@@ -126,10 +137,10 @@ Or just run `pnpm --filter web exec playwright test` — 21/21 should pass in ~5
 
 | ID | Item | Sprint to address |
 |----|------|-------------------|
-| TEC-04 | BE integration tests with real Postgres (testcontainers) | Sprint 6 |
+| TEC-04 | BE integration tests with real Postgres (testcontainers) | Sprint 7 |
 | TEC-05 | JWT instead of session table (stateless API) | Sprint 7+ |
-| TEC-06 | Some FE pages still rely on mock seed (template detail fallback) | Sprint 6 |
-| TEC-12 | Mindmap public viewer hides edit buttons but Canvas still renders them — disable add/save when read-only | Sprint 6 |
+| TEC-06 | Some FE pages still rely on mock seed (template detail fallback) | Sprint 7 |
+| ~~TEC-12~~ | ~~Mindmap public viewer disable add/save when read-only~~ | ✅ closed Sprint 6 |
 
 ## Blocked items (need Quân's credentials/decisions)
 
@@ -138,7 +149,7 @@ Or just run `pnpm --filter web exec playwright test` — 21/21 should pass in ~5
 - **S2-06** Welcome email — need Resend API key
 - **S2-07** Staging deploy — need Vercel + Railway provisioned
 - **S2-10** AI chat tutor with SSE — needs NIGHT_SHIFT_MODE=false (paid LLM calls)
-- Account delete (currently disabled in Settings) — need decision on retention period
+- ~~Account delete (currently disabled in Settings)~~ — ✅ closed Sprint 6 (hard delete + cascade + double confirm; chose immediate delete over retention because (a) cascade is clean, (b) Export JSON already gives user a backup path before deletion)
 
 ---
 
