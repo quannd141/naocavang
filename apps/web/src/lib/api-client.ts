@@ -397,7 +397,16 @@ export const quizApi = {
       method: 'POST',
       body: { answers, timeSpentSec },
     }),
+  listAttempts: (quizId: string) =>
+    apiRequest<QuizAttemptSummary[]>(`/quizzes/${quizId}/attempts`),
 };
+
+export interface QuizAttemptSummary {
+  id: string;
+  score: number;
+  timeSpentSec: number;
+  completedAt: string;
+}
 
 export const flashcardApi = {
   listDecks: () => apiRequest<FlashcardDeckSummary[]>('/flashcards/decks'),

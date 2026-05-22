@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import {
   ApiError,
   type QuizAttemptResult,
+  type QuizAttemptSummary,
   type QuizFull,
   quizApi,
 } from '@/lib/api-client';
@@ -26,6 +27,7 @@ export default function QuizPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [quiz, setQuiz] = useState<QuizFull | null>(null);
+  const [attempts, setAttempts] = useState<QuizAttemptSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('intro');
   const [idx, setIdx] = useState(0);
@@ -44,6 +46,12 @@ export default function QuizPage() {
           return;
         }
         setError(err instanceof ApiError ? err.message : (err as Error).message);
+      });
+    quizApi
+      .listAttempts(params.id)
+      .then(setAttempts)
+      .catch(() => {
+        // History is non-critical — fail silently to avoid drowning the intro screen.
       });
   }, [params.id, router]);
 
@@ -100,13 +108,14 @@ export default function QuizPage() {
               <p>📊 Kết quả lưu vào lịch sử học tập</p>
             </div>
             <Button size="lg" className="w-full" onClick={startQuiz}>
-              Bắt đầu →
+              {attempts.length > 0 ? 'Làm lại →' : 'Bắt đầu →'}
             </Button>
             <Button variant="ghost" asChild className="w-full">
               <Link href="/quizzes">Quay lại</Link>
             </Button>
           </CardContent>
         </Card>
+        {attempts.length > 0 && <AttemptHistory attempts={attempts} />}
       </div>
     );
   }
@@ -207,6 +216,74 @@ export default function QuizPage() {
         setPhase('intro');
       }}
     />
+  );
+}
+
+function AttemptHistory({ attempts }: { attempts: QuizAttemptSummary[] }) {
+  const best = Math.max(...attempts.map((a) => a.score));
+  const avg = Math.round(attempts.reduce((s, a) => s + a.score, 0) / attempts.length);
+  return (
+    <Card className="mt-6">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold">Lịch sử ({attempts.length} lần)</h3>
+          <div className="text-xs text-muted-foreground">
+            Cao nhất {best}% • Trung bình {avg}%
+          </div>
+        </div>
+        <div className="rounded-md border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Ngày</th>
+                <th className="px-3 py-2 text-right font-medium">Điểm</th>
+                <th className="px-3 py-2 text-right font-medium hidden sm:table-cell">Thời gian</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attempts.slice(0, 10).map((a) => {
+                const d = new Date(a.completedAt);
+                const dateLabel = d.toLocaleString('vi-VN', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+                const mins = Math.floor(a.timeSpentSec / 60);
+                const secs = a.timeSpentSec % 60;
+                return (
+                  <tr key={a.id} className="border-t border-border">
+                    <td className="px-3 py-2">{dateLabel}</td>
+                    <td className="px-3 py-2 text-right font-semibold">
+                      <span
+                        className={cn(
+                          a.score >= 80
+                            ? 'text-green-700'
+                            : a.score >= 50
+                              ? 'text-amber-700'
+                              : 'text-red-700',
+                        )}
+                      >
+                        {a.score}%
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right text-muted-foreground hidden sm:table-cell">
+                      {mins > 0 ? `${mins}m ` : ''}
+                      {secs}s
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {attempts.length > 10 && (
+          <div className="text-xs text-muted-foreground text-center">
+            Hiện 10 lần gần nhất.
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
