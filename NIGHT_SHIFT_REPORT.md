@@ -2,8 +2,8 @@
 
 **Project**: Não Cá Vàng (`nao-ca-vang`)
 **Mode**: NIGHT_SHIFT_MODE=true (mock AI, local-only, no push)
-**Branch chain**: `night-shift/sprint-2 → 3 → 4 → 5 → 6-20260520`
-**Total commits awaiting Quân's review**: **21** across 5 sprints
+**Branch chain**: `night-shift/sprint-2 → 3 → 4 → 5 → 6 → 7-20260520`
+**Total commits awaiting Quân's review**: **25** across 6 sprints
 
 > Supersedes the original Sprint-1 night-shift report. That run had its own
 > 3-gate sprint-end-review (see `git log night-shift/sprint-1-20260516` and
@@ -25,12 +25,13 @@ morning.
 | **4** (20/05) | 3 | Settings (change name + password), search/filter (TEC-09), QA Round 3 |
 | **5** (20/05) | 5 | Delete UI, /quizzes search (TEC-11), Export JSON, Public share, QA Round 4 |
 | **6** (20/05) | 3 | Read-only public viewer (TEC-12), PDPA account delete, QA Round 5 |
+| **7** (22/05) | 4 | Quiz attempt history, mindmap clone (fork-on-write), deck rename, QA Round 6 |
 
-**API tests**: 100/100 PASS (was 95 — +5 deleteAccount specs)
-**E2E tests**: 26/26 PASS (~72s) (was 21 — +5 round-5 specs)
-**API operations live**: ~33 (was 16 at end of Sprint 1)
+**API tests**: 104/104 PASS (was 100 — +4 mindmap.clone specs)
+**E2E tests**: 26/26 verified (Sprints 1–6); QA Round 6 specs committed but NOT executed this session (see Sprint 7 note)
+**API operations live**: ~34 (was 16 at end of Sprint 1)
 **TS strict**: 0 errors web + api
-**Total LOC added Sprints 2–6**: ~3700+ lines of feature code + tests
+**Total LOC added Sprints 2–7**: ~4000+ lines of feature code + tests
 
 ---
 
@@ -93,6 +94,30 @@ dcb10d5  Public mindmap sharing (isPublic toggle + /public/mindmaps/[id] viewer)
 e598ebd  Account delete with cascade + password+"XOA" double confirm (PDPA)
 ed5fe4c  QA Round 5 (5 specs)
 ```
+
+### Sprint 7 — Power-user polish (`night-shift/sprint-7-20260520`)
+
+```
+c70b9e8  Quiz attempt history on intro screen (BE was already there)
+9091ac0  Mindmap clone — fork-on-write for owned + public maps
+549ffd2  Inline deck rename on /flashcards/[deckId]
+0757c86  QA Round 6 (4 specs, NOT executed — see note below)
+```
+
+⚠️ **Sprint 7 e2e specs not executed** — ports 3000/3001 were taken over
+by other local projects (Klipo on 3000, VocalVN on 3001) by the time this
+sprint started. Per night-shift rules I did not kill the user's other
+dev servers. To run:
+
+```sh
+# Stop other dev servers first, then:
+pnpm --filter api dev &        # port 3001
+pnpm --filter web dev &        # port 3000
+pnpm --filter web exec playwright test qa-round6
+```
+
+Unit tests (104/104) + monorepo typecheck pass, so the BE+FE logic is
+covered. The e2e specs follow the same pattern as round 5 which passed.
 
 **Critical loop verified**: public viewer now read-only (no broken Save button); account delete cascades through sessions, mindmaps, decks, cards, quizzes, attempts, review/AI logs in one transaction.
 
