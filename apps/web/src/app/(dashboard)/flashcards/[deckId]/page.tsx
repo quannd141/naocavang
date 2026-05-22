@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { Plus, Play, Trash2 } from 'lucide-react';
-import { PageHeader } from '@/components/layout/page-header';
+import { Pencil, Plus, Play, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +25,31 @@ export default function DeckDetailPage() {
 
   // delete-card state
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // rename state
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [savingRename, setSavingRename] = useState(false);
+
+  async function handleRename() {
+    if (!deck) return;
+    const next = renameValue.trim();
+    if (next.length === 0 || next === deck.title) {
+      setRenaming(false);
+      return;
+    }
+    setSavingRename(true);
+    setError(null);
+    try {
+      await flashcardApi.updateDeck(deck.id, { title: next });
+      await reload();
+      setRenaming(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : (err as Error).message);
+    } finally {
+      setSavingRename(false);
+    }
+  }
 
   async function reload() {
     const fresh = await flashcardApi.getDeck(params.deckId);
@@ -94,17 +118,64 @@ export default function DeckDetailPage() {
 
   return (
     <div className="container mx-auto px-4 lg:px-6 py-8 max-w-4xl">
-      <PageHeader
-        title={deck.title}
-        description={`Mind map gốc: ${deck.mindmap.title}`}
-        action={
-          <Button asChild size="lg" disabled={deck.cards.length === 0}>
-            <Link href={`/flashcards/${deck.id}/study`}>
-              <Play className="h-4 w-4" /> Bắt đầu ôn
-            </Link>
-          </Button>
-        }
-      />
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="min-w-0 flex-1">
+          {renaming ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRename();
+              }}
+              className="flex gap-2 items-center"
+            >
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                disabled={savingRename}
+                autoFocus
+                aria-label="Tên deck"
+                className="text-lg font-semibold"
+              />
+              <Button size="sm" type="submit" disabled={savingRename}>
+                {savingRename ? '...' : 'Lưu'}
+              </Button>
+              <Button
+                size="sm"
+                type="button"
+                variant="ghost"
+                disabled={savingRename}
+                onClick={() => setRenaming(false)}
+              >
+                Huỷ
+              </Button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight truncate">{deck.title}</h1>
+              <button
+                type="button"
+                onClick={() => {
+                  setRenameValue(deck.title);
+                  setRenaming(true);
+                }}
+                title="Đổi tên deck"
+                aria-label="Đổi tên deck"
+                className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted flex items-center justify-center"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <p className="text-sm text-muted-foreground mt-1">
+            Mind map gốc: {deck.mindmap.title}
+          </p>
+        </div>
+        <Button asChild size="lg" disabled={deck.cards.length === 0}>
+          <Link href={`/flashcards/${deck.id}/study`}>
+            <Play className="h-4 w-4" /> Bắt đầu ôn
+          </Link>
+        </Button>
+      </div>
 
       <div className="flex gap-3 mb-6">
         {deck.mindmap.subject && <Badge variant="outline">{deck.mindmap.subject}</Badge>}
