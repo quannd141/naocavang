@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Copy, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,22 @@ export default function MindMapsPage() {
   const [query, setQuery] = useState('');
   const [subject, setSubject] = useState<string>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [cloningId, setCloningId] = useState<string | null>(null);
+  const router = useRouter();
+
+  async function handleClone(e: React.MouseEvent, mm: MindMapSummary) {
+    e.preventDefault();
+    e.stopPropagation();
+    setCloningId(mm.id);
+    setError(null);
+    try {
+      const copy = await mindmapApi.clone(mm.id);
+      router.push(`/mindmaps/${copy.id}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : (err as Error).message);
+      setCloningId(null);
+    }
+  }
 
   async function handleDelete(e: React.MouseEvent, mm: MindMapSummary) {
     e.preventDefault();
@@ -216,16 +233,28 @@ export default function MindMapsPage() {
                   </CardContent>
                 </Card>
               </Link>
-              <button
-                type="button"
-                onClick={(e) => handleDelete(e, mm)}
-                disabled={deletingId === mm.id}
-                title="Xoá mind map"
-                aria-label={`Xoá ${mm.title}`}
-                className="absolute top-2 right-2 h-8 w-8 rounded-md bg-white/90 border border-border opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-red-600 hover:bg-red-50 disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={(e) => handleClone(e, mm)}
+                  disabled={cloningId === mm.id}
+                  title="Sao chép mind map"
+                  aria-label={`Sao chép ${mm.title}`}
+                  className="h-8 w-8 rounded-md bg-white/90 border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-50"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleDelete(e, mm)}
+                  disabled={deletingId === mm.id}
+                  title="Xoá mind map"
+                  aria-label={`Xoá ${mm.title}`}
+                  className="h-8 w-8 rounded-md bg-white/90 border border-border flex items-center justify-center text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
 

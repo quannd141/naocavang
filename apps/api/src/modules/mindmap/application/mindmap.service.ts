@@ -134,6 +134,34 @@ export class MindMapService {
     });
   }
 
+  /**
+   * Duplicate an existing mind map into the caller's account. Works for both
+   * owned mind maps and any public mind map (fork-on-write). The clone keeps
+   * the same data + subject + tags but resets isPublic to false.
+   */
+  async clone(id: string, userId: string) {
+    const source = await this.prisma.mindMap.findUnique({ where: { id } });
+    if (!source) throw new NotFoundException({ code: 'MINDMAP_NOT_FOUND' });
+    if (!source.isPublic && source.userId !== userId) {
+      throw new ForbiddenException({ code: 'MINDMAP_ACCESS_DENIED' });
+    }
+    return this.prisma.mindMap.create({
+      data: {
+        userId,
+        title: `${source.title} (sao chép)`,
+        description: source.description,
+        data: source.data as never,
+        subject: source.subject,
+        tags: source.tags,
+        sourceTemplateId: null,
+        // Cloned mindmaps surface as 'manual' (the enum doesn't include 'clone')
+        // so they appear in the user's library like any hand-edited map.
+        sourceType: 'manual',
+        isPublic: false,
+      },
+    });
+  }
+
   async delete(id: string, userId: string) {
     const existing = await this.prisma.mindMap.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException({ code: 'MINDMAP_NOT_FOUND' });

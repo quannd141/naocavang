@@ -230,6 +230,8 @@ export const mindmapApi = {
   }) => apiRequest<MindMapFull>('/mindmaps', { method: 'POST', body: input }),
   createFromTemplate: (templateId: string) =>
     apiRequest<MindMapFull>(`/mindmaps/from-template/${templateId}`, { method: 'POST' }),
+  clone: (id: string) =>
+    apiRequest<MindMapFull>(`/mindmaps/${id}/clone`, { method: 'POST' }),
   update: (id: string, input: Partial<{ title: string; description: string; data: object; tags: string[]; isPublic: boolean }>) =>
     apiRequest<MindMapFull>(`/mindmaps/${id}`, { method: 'PATCH', body: input }),
   delete: (id: string) => apiRequest<void>(`/mindmaps/${id}`, { method: 'DELETE' }),

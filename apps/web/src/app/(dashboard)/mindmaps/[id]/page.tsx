@@ -171,6 +171,16 @@ export default function MindMapEditor() {
     // Briefly show a "copied" hint by reusing the link button's title — handled inline
   }
 
+  async function cloneMindMap() {
+    if (!state || !state.remote) return;
+    try {
+      const copy = await mindmapApi.clone(state.id);
+      router.push(`/mindmaps/${copy.id}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : (err as Error).message);
+    }
+  }
+
   return (
     <div className="relative h-screen">
       {state.remote && (
@@ -196,6 +206,14 @@ export default function MindMapEditor() {
               📋 Copy link
             </button>
           )}
+          <button
+            type="button"
+            onClick={cloneMindMap}
+            className="px-2 py-1 rounded border border-border text-xs font-medium hover:bg-muted active:scale-95 transition"
+            title="Sao chép mind map này"
+          >
+            📑 Sao chép
+          </button>
         </div>
       )}
       <MindMapCanvas

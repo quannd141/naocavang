@@ -58,6 +58,16 @@ export class MindMapController {
     return { success: true, data: mm };
   }
 
+  @Post(':id/clone')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Sao chép mind map (sở hữu hoặc public) sang tài khoản hiện tại',
+  })
+  async clone(@Param('id') id: string, @CurrentUser() user: AuthedUser) {
+    const mm = await this.service.clone(id, user.id);
+    return { success: true, data: mm };
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update mind map (title/data/tags/isPublic)' })
   async update(
