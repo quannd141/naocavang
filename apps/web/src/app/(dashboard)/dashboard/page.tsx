@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useMockSession } from '@/lib/mock/use-session';
 import { ApiError, type UserStats, statsApi } from '@/lib/api-client';
+import { ReviewActivityCard } from '@/components/dashboard/ReviewActivityCard';
+import { DueForecastCard } from '@/components/dashboard/DueForecastCard';
 
 const QUICK_ACTIONS = [
   { title: 'Tạo mind map mới', description: 'Từ template hoặc paste text', href: '/mindmaps/new', icon: Network, color: 'bg-blue-500' },
@@ -151,6 +153,11 @@ export default function DashboardHome() {
             </Card>
           );
         })}
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <ReviewActivityCard />
+        <DueForecastCard />
       </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-3">

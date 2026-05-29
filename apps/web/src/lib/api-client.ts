@@ -163,8 +163,19 @@ export interface UserStats {
   }>;
 }
 
+export interface ReviewActivity {
+  /** Window length in days (clamped server-side to [1,90]). */
+  days: number;
+  /** One bucket per day, oldest first, ending today. */
+  buckets: Array<{ date: string; count: number }>;
+  /** Total reviews across the window. */
+  total: number;
+}
+
 export const statsApi = {
   me: () => apiRequest<UserStats>('/users/me/stats'),
+  activity: (days?: number) =>
+    apiRequest<ReviewActivity>(`/users/me/activity${days ? `?days=${days}` : ''}`),
 };
 
 export interface UserExport {
@@ -217,10 +228,28 @@ export interface PublicMindMap {
   updatedAt: string;
 }
 
+export interface PublicMindMapSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  subject: string | null;
+  tags: string[];
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const mindmapApi = {
   list: () => apiRequest<MindMapSummary[]>('/mindmaps'),
   get: (id: string) => apiRequest<MindMapFull>(`/mindmaps/${id}`),
   getPublic: (id: string) => apiRequest<PublicMindMap>(`/public/mindmaps/${id}`, { noAuth: true }),
+  listPublic: (opts?: { subject?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (opts?.subject) qs.set('subject', opts.subject);
+    if (opts?.limit) qs.set('limit', String(opts.limit));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<PublicMindMapSummary[]>(`/public/mindmaps${suffix}`, { noAuth: true });
+  },
   create: (input: {
     title: string;
     description?: string;
@@ -410,8 +439,21 @@ export interface QuizAttemptSummary {
   completedAt: string;
 }
 
+export interface DueForecast {
+  /** Cards due before today (need catching up). */
+  overdue: number;
+  /** One bucket per day, today-first. */
+  buckets: Array<{ date: string; count: number }>;
+  /** Cards due within the window (excludes overdue). */
+  total: number;
+  /** Window length in days (clamped server-side to [1,30]). */
+  days: number;
+}
+
 export const flashcardApi = {
   listDecks: () => apiRequest<FlashcardDeckSummary[]>('/flashcards/decks'),
+  getForecast: (days?: number) =>
+    apiRequest<DueForecast>(`/flashcards/forecast${days ? `?days=${days}` : ''}`),
   getDeck: (id: string) => apiRequest<FlashcardDeckFull>(`/flashcards/decks/${id}`),
   createDeck: (input: {
     title: string;
