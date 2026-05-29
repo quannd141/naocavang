@@ -110,6 +110,30 @@ describe('FlashcardService', () => {
     });
   });
 
+  describe('getDueForecast', () => {
+    it('queries the user cards and returns buckets + window', async () => {
+      const today = new Date();
+      prisma.flashcard.findMany.mockResolvedValue([{ nextReviewAt: today }]);
+
+      const result = await service.getDueForecast(USER_A, 7);
+
+      expect(result.days).toBe(7);
+      expect(result.buckets).toHaveLength(7);
+      expect(result.total).toBe(1);
+      expect(prisma.flashcard.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ deck: { userId: USER_A } }),
+        }),
+      );
+    });
+
+    it('clamps the window (invalid -> 7, huge -> 30)', async () => {
+      prisma.flashcard.findMany.mockResolvedValue([]);
+      expect((await service.getDueForecast(USER_A, 0)).days).toBe(7);
+      expect((await service.getDueForecast(USER_A, 999)).days).toBe(30);
+    });
+  });
+
   describe('getDeck', () => {
     it('returns deck for owner', async () => {
       prisma.flashcardDeck.findUnique.mockResolvedValue({

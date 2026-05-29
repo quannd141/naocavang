@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
+import { clampForecastDays, forecastDueCards } from '../domain/due-forecast';
 import { nextReviewDate, sm2, type ReviewQuality } from '../domain/sm2';
 import type {
   CreateDeckDto,
@@ -213,6 +214,23 @@ export class FlashcardService {
       orderBy: { nextReviewAt: 'asc' },
       take: limit,
     });
+  }
+
+  /**
+   * Forecast upcoming reviews across all of the user's cards for the next N
+   * days (default 7, max 30). Overdue cards are reported separately.
+   */
+  async getDueForecast(userId: string, days?: number) {
+    const window = clampForecastDays(days);
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+    end.setDate(end.getDate() + window); // exclusive upper bound (start of day after window)
+
+    const cards = await this.prisma.flashcard.findMany({
+      where: { deck: { userId }, nextReviewAt: { lt: end } },
+      select: { nextReviewAt: true },
+    });
+    return { ...forecastDueCards(cards, new Date(), window), days: window };
   }
 
   /** Apply SM-2 to a card and persist the new state + write a review log. */

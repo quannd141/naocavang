@@ -103,6 +103,16 @@ export class FlashcardController {
     await this.service.deleteCard(cardId, user.id);
   }
 
+  @Get('forecast')
+  @ApiOperation({ summary: 'Upcoming reviews for the next N days (?days=7, max 30) + overdue' })
+  async forecast(@CurrentUser() user: AuthedUser, @Query('days') daysRaw?: string) {
+    const data = await this.service.getDueForecast(
+      user.id,
+      daysRaw !== undefined ? Number(daysRaw) : undefined,
+    );
+    return { success: true, data };
+  }
+
   // ---------- Study session ----------
 
   @Get('decks/:id/due')
