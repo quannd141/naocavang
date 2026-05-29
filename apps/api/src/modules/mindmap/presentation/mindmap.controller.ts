@@ -8,7 +8,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -84,12 +83,5 @@ export class MindMapController {
   @ApiOperation({ summary: 'Xoá mind map (chỉ owner)' })
   async delete(@Param('id') id: string, @CurrentUser() user: AuthedUser) {
     await this.service.delete(id, user.id);
-  }
-
-  @Get('public/list')
-  @ApiOperation({ summary: 'Danh sách mind map public (gallery)' })
-  async publicList(@Query('limit') _limit?: string) {
-    // future improvement: remove guard at method level via SkipAuth decorator
-    return { success: true, data: [], note: 'TODO: implement public list' };
   }
 }

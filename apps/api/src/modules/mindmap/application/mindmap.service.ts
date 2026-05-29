@@ -79,6 +79,32 @@ export class MindMapService {
     };
   }
 
+  /**
+   * Public gallery — list mind maps with isPublic=true, newest first.
+   * No auth required. Author name is surfaced for credit; the nested user
+   * relation is never leaked. `limit` is clamped to [1, 50] (default 20) so a
+   * crafted query can't ask for the whole table.
+   */
+  async listPublic(opts: { limit?: number; subject?: string } = {}) {
+    const take = clampLimit(opts.limit);
+    const rows = await this.prisma.mindMap.findMany({
+      where: { isPublic: true, ...(opts.subject ? { subject: opts.subject as never } : {}) },
+      orderBy: { updatedAt: 'desc' },
+      take,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        subject: true,
+        tags: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: { name: true } },
+      },
+    });
+    return rows.map(({ user, ...rest }) => ({ ...rest, authorName: user.name }));
+  }
+
   async create(userId: string, dto: CreateMindMapDto) {
     this.validateData(dto.data);
     return this.prisma.mindMap.create({
@@ -168,4 +194,19 @@ export class MindMapService {
     if (existing.userId !== userId) throw new ForbiddenException({ code: 'MINDMAP_ACCESS_DENIED' });
     await this.prisma.mindMap.delete({ where: { id } });
   }
+}
+
+const DEFAULT_PUBLIC_LIMIT = 20;
+const MAX_PUBLIC_LIMIT = 50;
+
+/**
+ * Clamp a caller-supplied limit into [1, 50]. Invalid values (NaN, ≤0,
+ * undefined) fall back to the default. Exported for unit tests and reuse by
+ * the controller when parsing query strings.
+ */
+export function clampLimit(limit?: number): number {
+  if (limit === undefined || !Number.isFinite(limit) || limit <= 0) {
+    return DEFAULT_PUBLIC_LIMIT;
+  }
+  return Math.min(Math.floor(limit), MAX_PUBLIC_LIMIT);
 }

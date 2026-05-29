@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { StatsService, computeStreak } from './stats.service';
+import { StatsService, computeDailyReviewCounts, computeStreak } from './stats.service';
 
 describe('computeStreak', () => {
   // Use a fixed "now" so the test isn't time-of-day-flaky.
@@ -49,6 +49,51 @@ describe('computeStreak', () => {
     const apr30 = new Date('2026-04-30T22:00:00');
     const apr29 = new Date('2026-04-29T08:00:00');
     expect(computeStreak([may1, apr30, apr29], may1)).toBe(3);
+  });
+});
+
+describe('computeDailyReviewCounts', () => {
+  const NOW = new Date('2026-05-20T15:00:00');
+
+  function at(daysAgo: number, hour = 10): Date {
+    const d = new Date(NOW);
+    d.setDate(d.getDate() - daysAgo);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  }
+
+  it('returns one bucket per day, oldest first, ending today', () => {
+    const result = computeDailyReviewCounts([], NOW, 7);
+    expect(result).toHaveLength(7);
+    expect(result[0].date).toBe('2026-05-14');
+    expect(result[6].date).toBe('2026-05-20');
+    expect(result.every((b) => b.count === 0)).toBe(true);
+  });
+
+  it('counts reviews into the correct day buckets', () => {
+    const dates = [at(0), at(0), at(0), at(2), at(6)];
+    const result = computeDailyReviewCounts(dates, NOW, 7);
+    const byDate = Object.fromEntries(result.map((b) => [b.date, b.count]));
+    expect(byDate['2026-05-20']).toBe(3); // today
+    expect(byDate['2026-05-18']).toBe(1); // 2 days ago
+    expect(byDate['2026-05-14']).toBe(1); // 6 days ago
+    expect(byDate['2026-05-19']).toBe(0);
+  });
+
+  it('ignores reviews older than the window', () => {
+    const result = computeDailyReviewCounts([at(30), at(8)], NOW, 7);
+    const total = result.reduce((s, b) => s + b.count, 0);
+    expect(total).toBe(0);
+  });
+
+  it('handles month boundary in the window', () => {
+    const now = new Date('2026-05-02T12:00:00');
+    const apr30 = new Date('2026-04-30T09:00:00');
+    const result = computeDailyReviewCounts([apr30], now, 5);
+    const byDate = Object.fromEntries(result.map((b) => [b.date, b.count]));
+    expect(byDate['2026-04-30']).toBe(1);
+    expect(result[0].date).toBe('2026-04-28');
+    expect(result[4].date).toBe('2026-05-02');
   });
 });
 
@@ -134,5 +179,43 @@ describe('StatsService.getUserStats', () => {
     expect(stats.streak).toBe(0);
     expect(stats.recentMindmaps).toEqual([]);
     expect(stats.recentDecks).toEqual([]);
+  });
+});
+
+describe('StatsService.getActivity', () => {
+  let prisma: PrismaMock;
+  let service: StatsService;
+
+  beforeEach(() => {
+    prisma = createPrismaMock();
+    service = new StatsService(prisma as unknown as never);
+  });
+
+  it('returns daily buckets for the requested window and a total', async () => {
+    prisma.reviewLog.findMany.mockResolvedValue([
+      { reviewedAt: new Date() },
+      { reviewedAt: new Date() },
+    ]);
+
+    const activity = await service.getActivity('user-1', 7);
+
+    expect(activity.days).toBe(7);
+    expect(activity.buckets).toHaveLength(7);
+    expect(activity.total).toBe(2);
+    // queries only the caller's reviews
+    expect(prisma.reviewLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: 'user-1' }),
+      }),
+    );
+  });
+
+  it('clamps days to [1, 90] (default 30 for invalid)', async () => {
+    prisma.reviewLog.findMany.mockResolvedValue([]);
+
+    expect((await service.getActivity('u', 999)).days).toBe(90);
+    expect((await service.getActivity('u', 0)).days).toBe(30);
+    expect((await service.getActivity('u', Number.NaN)).days).toBe(30);
+    expect((await service.getActivity('u')).days).toBe(30);
   });
 });

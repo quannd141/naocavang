@@ -25,6 +25,15 @@ export interface UserStats {
   }>;
 }
 
+export interface ReviewActivity {
+  /** Number of days the window covers (clamped to [1, 90]). */
+  days: number;
+  /** One bucket per day, oldest first, ending today. */
+  buckets: Array<{ date: string; count: number }>;
+  /** Total reviews across the window. */
+  total: number;
+}
+
 @Injectable()
 export class StatsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -103,6 +112,77 @@ export class StatsService {
       recentDecks,
     };
   }
+
+  /**
+   * Daily review activity for the last N days (for the dashboard heatmap/chart).
+   * `days` is clamped to [1, 90]; invalid values fall back to 30.
+   */
+  async getActivity(userId: string, days?: number): Promise<ReviewActivity> {
+    const window = clampActivityDays(days);
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (window - 1));
+
+    const reviews = await this.prisma.reviewLog.findMany({
+      where: { userId, reviewedAt: { gte: start } },
+      select: { reviewedAt: true },
+    });
+
+    const buckets = computeDailyReviewCounts(
+      reviews.map((r) => r.reviewedAt),
+      now,
+      window,
+    );
+    return {
+      days: window,
+      buckets,
+      total: buckets.reduce((sum, b) => sum + b.count, 0),
+    };
+  }
+}
+
+const DEFAULT_ACTIVITY_DAYS = 30;
+const MAX_ACTIVITY_DAYS = 90;
+
+/**
+ * Clamp the requested activity window into [1, 90]. Invalid values (NaN, ≤0,
+ * undefined) fall back to the 30-day default. Exported for unit tests.
+ */
+export function clampActivityDays(days?: number): number {
+  if (days === undefined || !Number.isFinite(days) || days <= 0) {
+    return DEFAULT_ACTIVITY_DAYS;
+  }
+  return Math.min(Math.floor(days), MAX_ACTIVITY_DAYS);
+}
+
+/**
+ * Bucket review timestamps into per-day counts for the last `days` days.
+ * Returns exactly `days` buckets, oldest first, ending with today. Reviews
+ * outside the window are ignored. Pure — exported for unit tests.
+ */
+export function computeDailyReviewCounts(
+  reviewDates: Date[],
+  now: Date,
+  days: number,
+): Array<{ date: string; count: number }> {
+  const buckets: Array<{ date: string; count: number }> = [];
+  const index = new Map<string, number>();
+  const cursor = new Date(now);
+  cursor.setHours(0, 0, 0, 0);
+  cursor.setDate(cursor.getDate() - (days - 1));
+  for (let i = 0; i < days; i++) {
+    const key = dayKey(cursor);
+    index.set(key, i);
+    buckets.push({ date: key, count: 0 });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  for (const d of reviewDates) {
+    const i = index.get(dayKey(d));
+    if (i !== undefined) buckets[i].count += 1;
+  }
+  return buckets;
 }
 
 /**

@@ -1,219 +1,148 @@
-# 🌙 Night Shift Report — 2026-05-20
+# 🌙 Night Shift Report — 2026-05-29 (Sprint 8)
 
 **Project**: Não Cá Vàng (`nao-ca-vang`)
-**Mode**: NIGHT_SHIFT_MODE=true (mock AI, local-only, no push)
-**Branch chain**: `night-shift/sprint-2 → 3 → 4 → 5 → 6 → 7-20260520`
-**Total commits awaiting Quân's review**: **25** across 6 sprints
+**Mode**: NIGHT_SHIFT_MODE=true (mock AI, local-only, no push to main)
+**Branch**: `night-shift/sprint-8-20260529` (off `main`)
+**Commits awaiting Quân's review**: **4** (all on the feature branch)
 
-> Supersedes the original Sprint-1 night-shift report. That run had its own
-> 3-gate sprint-end-review (see `git log night-shift/sprint-1-20260516` and
-> the CHANGELOG entry for Sprint 1). This file consolidates Sprints 2–5.
+> Supersedes the 2026-05-20 consolidated report (Sprints 2–7, now merged to
+> `main`/`origin`). This run is a clean Sprint 8 on a fresh feature branch.
 
 ---
 
 ## Summary
 
-The /night-shift skill was invoked mid Sprint 5 after **4 sprints worth of
-work had already completed under the same constraints** (mock mode, local-only,
-no push). This report consolidates the whole run so Quân can review in the
-morning.
+| Story | Commit | What | Tests |
+|-------|--------|------|-------|
+| S8-01 | `f157a08` | Public mindmap gallery `GET /public/mindmaps` (+ removed dead stub) | +4 |
+| S8-02 | `bb071b9` | Daily review activity `GET /users/me/activity` | +6 |
+| S8-03 | `b468269` | Quiz attempt summary in `meta` of `GET /quizzes/:id/attempts` | +5 |
+| S8-04 | `2206283` | Flashcard due-forecast `GET /flashcards/forecast` | +8 |
 
-| Sprint | Commits | Headline outcome |
-|---|---|---|
-| **2** (19/05) | 9 | Flashcard + Quiz BE modules, FE→BE wiring, manual card CRUD |
-| **3** (20/05) | 3 | Dashboard real stats, Levenshtein grader (TEC-08), QA Round 2 |
-| **4** (20/05) | 3 | Settings (change name + password), search/filter (TEC-09), QA Round 3 |
-| **5** (20/05) | 5 | Delete UI, /quizzes search (TEC-11), Export JSON, Public share, QA Round 4 |
-| **6** (20/05) | 3 | Read-only public viewer (TEC-12), PDPA account delete, QA Round 5 |
-| **7** (22/05) | 4 | Quiz attempt history, mindmap clone (fork-on-write), deck rename, QA Round 6 |
+**Theme**: Public gallery + learning analytics — all backend, all pure-logic,
+all unit-testable.
 
-**API tests**: 104/104 PASS (was 100 — +4 mindmap.clone specs)
-**E2E tests**: 26/26 verified (Sprints 1–6); QA Round 6 specs committed but NOT executed this session (see Sprint 7 note)
-**API operations live**: ~34 (was 16 at end of Sprint 1)
-**TS strict**: 0 errors web + api
-**Total LOC added Sprints 2–7**: ~4000+ lines of feature code + tests
+**API unit tests**: **104 → 127 PASS** (+23 new specs across 4 stories)
+**API typecheck (`tsc --noEmit`)**: clean
+**Biome lint**: clean on all new pure-logic files (`*.service.ts`, `domain/*.ts`, specs)
+**Diff**: 15 files, +582 / −14 (apps/api only — no FE, no infra touched)
 
 ---
 
-## Constraints honoured ✓
+## Why this scope (honest constraint note)
 
-- ❌ **No real API calls**: `NIGHT_SHIFT_MODE=true` env enforced in `apps/api/.env`. `GeminiAdapter` throws if invoked with `FAKE_KEY_DO_NOT_USE` — but mock adapter handled all AI calls.
-- ❌ **No push to remote**: All 18 commits stay local on `night-shift/sprint-*` branches. Quân's choice when to push.
-- ❌ **No deploy**: zero `vercel deploy`, `railway`, `docker push`, etc.
-- ❌ **No destructive ops**: no force-push, no `git reset --hard` on Quân's branches, no migrations on prod DB.
-- ❌ **No secrets committed**: when Quân pasted real API keys into `.env.example` by mistake (Sprint 5 start), agent reverted that change, moved keys to gitignored `apps/api/.env`, and flagged 3 keys to rotate (commit `b310fe1`). Keys are: Anthropic + Google AI Studio + Groq.
+The dev box this session had **no Docker** and **pnpm only reachable via
+corepack** (`pnpm` not on PATH; `corepack enable` blocked by EPERM on
+`C:\Program Files`). Consequences:
 
----
-
-## Sprint-by-sprint highlights
-
-### Sprint 2 — Flashcard + Quiz core loop (`night-shift/sprint-2-20260519`)
-
-```
-f7cd7ee  Flashcard BE module (8 endpoints) + FE wiring (3 pages)
-2bfc104  Zod validation on mindmap.data (TEC-07 closed)
-86be2cc  Integration tests for FlashcardService + sm2 spec fixes
-89fa164  Quiz BE module (8 endpoints) + auto-add wrong→deck loop
-f73bb12  FE Quizzes + Library wired to real BE
-f61356d  Manual add/delete cards on existing deck (TEC-09 partial)
-0a1898e  Playwright QA Round 1 (7 specs)
-b310fe1  Revert leaked API keys from .env.example (security fix)
-```
-
-**Critical loop verified**: mindmap → auto-gen flashcard deck → quiz → submit wrong → cards appended to deck.
-
-### Sprint 3 — Dashboard polish + grader (`night-shift/sprint-3-20260520`)
-
-```
-43630d2  Dashboard real stats endpoint (GET /users/me/stats)
-90fb28d  Levenshtein answer grader (TEC-08 closed) — "phep cong" matches "phép cộng"
-3271759  QA Round 2 (4 specs)
-```
-
-### Sprint 4 — Settings + search (`night-shift/sprint-4-20260520`)
-
-```
-1a873d3  Settings: change name + change password (invalidates all sessions)
-dc182ca  Search/filter on /mindmaps + /flashcards (TEC-09 closed)
-50ef4e3  QA Round 3 (5 specs)
-```
-
-### Sprint 5 — Power user features (`night-shift/sprint-5-20260520`)
-
-```
-a4c1c2f  Delete UI on /mindmaps + /quizzes (TEC-10) + /quizzes search (TEC-11)
-b5799a4  Export user data as JSON (PDPA, GET /users/me/export)
-dcb10d5  Public mindmap sharing (isPublic toggle + /public/mindmaps/[id] viewer)
-9db59ca  QA Round 4 (5 specs)
-```
-
-### Sprint 6 — Tech debt cleanup (`night-shift/sprint-6-20260520`)
-
-```
-5649f41  MindMapCanvas readOnly mode for /public viewer (TEC-12 closed)
-e598ebd  Account delete with cascade + password+"XOA" double confirm (PDPA)
-ed5fe4c  QA Round 5 (5 specs)
-```
-
-### Sprint 7 — Power-user polish (`night-shift/sprint-7-20260520`)
-
-```
-c70b9e8  Quiz attempt history on intro screen (BE was already there)
-9091ac0  Mindmap clone — fork-on-write for owned + public maps
-549ffd2  Inline deck rename on /flashcards/[deckId]
-0757c86  QA Round 6 (4 specs, NOT executed — see note below)
-```
-
-⚠️ **Sprint 7 e2e specs not executed** — ports 3000/3001 were taken over
-by other local projects (Klipo on 3000, VocalVN on 3001) by the time this
-sprint started. Per night-shift rules I did not kill the user's other
-dev servers. To run:
-
-```sh
-# Stop other dev servers first, then:
-pnpm --filter api dev &        # port 3001
-pnpm --filter web dev &        # port 3000
-pnpm --filter web exec playwright test qa-round6
-```
-
-Unit tests (104/104) + monorepo typecheck pass, so the BE+FE logic is
-covered. The e2e specs follow the same pattern as round 5 which passed.
-
-**Critical loop verified**: public viewer now read-only (no broken Save button); account delete cascades through sessions, mindmaps, decks, cards, quizzes, attempts, review/AI logs in one transaction.
+- ✅ Unit tests (vitest + mocked Prisma) **do** run — I installed deps via
+  `corepack pnpm@9.12.0 install` (took 2 tries; first hit `ERR_PNPM_EPERM` on
+  the `D:\.pnpm-store`, second completed) and ran `prisma generate` (which also
+  fixed 2 pre-existing `export.service.spec` failures caused by an
+  ungenerated client → `Prisma.Decimal is not a constructor`).
+- ❌ **No Postgres** → BE-integration-with-real-DB and Playwright **e2e could
+  not run**. So I deliberately scoped Sprint 8 to **pure-logic + service-layer**
+  work where vitest gives real verification, rather than features whose only
+  honest proof is e2e. Every new endpoint's core logic is a pure function with
+  exhaustive unit tests; the thin controller wiring is the only unverified-by-
+  test layer (it's 1–3 lines each, following existing patterns).
 
 ---
 
-## ⚠️ Things to verify in the morning
+## New API surface (for the morning smoke test)
 
-### MUST do (security)
-
-1. **Rotate 3 API keys** — they appeared in chat history during Sprint 5 start before being moved to gitignored file:
-   - Anthropic: https://console.anthropic.com/settings/keys (revoke `sk-ant-api03-WXsMCN...AA`)
-   - Google AI Studio: https://aistudio.google.com/app/apikey (delete `AIzaSyC_4elJ3...A`)
-   - Groq: https://console.groq.com/keys (revoke `gsk_XA0KgISqp...YZZYe`)
-   - Paste new keys into `apps/api/.env` (gitignored ✓), **NOT** into `.env.example`.
-
-### SHOULD do (review)
-
-2. **Review the 18 commits**: `git log --oneline night-shift/sprint-2-20260519..HEAD` on the sprint-5 branch.
-3. **Decide merge strategy**:
-   - Option A: merge sprint-2..5 chain into `main` locally then push.
-   - Option B: push each sprint as its own PR for review history.
-   - Option C: rebase + squash into 4 clean PRs (one per sprint).
-
-### Quick smoke test (5 min)
-
-Boot both servers, then:
 ```
-http://localhost:3000           → landing
-http://localhost:3000/register  → make a user
-http://localhost:3000/dashboard → stats tiles + recent activity
-/mindmaps/new                   → "Mind map trống" → editor + toggle 🌍 Public
-/flashcards                     → auto-gen from mindmap → study session
-/quizzes                        → auto-gen → take → "Hà Nội" vs "ha noi" both correct
-/settings                       → change name → Export JSON downloads
+GET /public/mindmaps?subject=math&limit=20   → public gallery (no auth)
+GET /users/me/activity?days=30                → [{date,count}] review heatmap
+GET /quizzes/:id/attempts                     → data[] unchanged + meta{count,bestScore,avgScore,lastScore}
+GET /flashcards/forecast?days=7               → {overdue, buckets[{date,count}], total, days}
 ```
 
-Or just run `pnpm --filter web exec playwright test` — 21/21 should pass in ~50s.
-
----
-
-## Tech debt still open
-
-| ID | Item | Sprint to address |
-|----|------|-------------------|
-| TEC-04 | BE integration tests with real Postgres (testcontainers) | Sprint 7 |
-| TEC-05 | JWT instead of session table (stateless API) | Sprint 7+ |
-| TEC-06 | Some FE pages still rely on mock seed (template detail fallback) | Sprint 7 |
-| ~~TEC-12~~ | ~~Mindmap public viewer disable add/save when read-only~~ | ✅ closed Sprint 6 |
-
-## Blocked items (need Quân's credentials/decisions)
-
-- **S2-01** Google OAuth — need `GOOGLE_CLIENT_ID/SECRET`
-- **S2-05** PDF upload → mind map — need R2 + real Gemini (Gemini key now exists, just need R2)
-- **S2-06** Welcome email — need Resend API key
-- **S2-07** Staging deploy — need Vercel + Railway provisioned
-- **S2-10** AI chat tutor with SSE — needs NIGHT_SHIFT_MODE=false (paid LLM calls)
-- ~~Account delete (currently disabled in Settings)~~ — ✅ closed Sprint 6 (hard delete + cascade + double confirm; chose immediate delete over retention because (a) cascade is clean, (b) Export JSON already gives user a backup path before deletion)
+All four are backend-only. **FE does not yet consume the 3 new endpoints**
+(activity / forecast / gallery-list) — those are dashboard/gallery widgets for
+a future FE story. The quiz `meta` is additive so the existing Sprint-7 intro
+screen is unaffected.
 
 ---
 
 ## Decisions I made unilaterally (Quân check)
 
-- **`matchAnswer` substring threshold = 4 chars** to avoid false-positive on single letters.
-- **Levenshtein similarity threshold = 0.85** for fuzzy matching. Catches 1-char typos in 7-char words and longer.
-- **`computeStreak` resets if no review today** (yesterday alone doesn't count). Tighter UX — encourages daily habit.
-- **Public mindmap returns 404 (not 403) for private maps** — avoids leaking existence to scrapers.
-- **Export bundle skips `review_log` table** — state already on cards (easeFactor, interval) keeps bundle small.
-- **Password change invalidates ALL sessions** (industry standard but a few users may complain).
+- **Gallery list lives on the public (no-auth) controller** `GET /public/mindmaps`,
+  not the authed `GET /mindmaps/public/list` stub (which I deleted). Rationale:
+  a gallery should be browsable logged-out, matching the existing
+  `/public/mindmaps/:id` viewer.
+- **Limit/days clamps**: gallery `limit` ∈ [1,50] default 20; activity `days`
+  ∈ [1,90] default 30; forecast `days` ∈ [1,30] default 7. Invalid/NaN → default.
+  Picked to cap query cost without an offset/cursor pagination layer (defer that
+  until the FE actually needs infinite scroll).
+- **Quiz summary under `meta`, not `data`** — keeps the Sprint-7 FE contract
+  (`data` = attempt array) intact while exposing best/avg/last.
+- **Forecast separates `overdue` from `total`** — `total` counts only
+  cards due *within* the window; cards due before today are surfaced as
+  `overdue` so the dashboard can nudge "catch up" distinctly from "upcoming".
 
 ---
 
-## 🧠 Context checkpoint
+## ⚠️ Things to look at in the morning
 
-- Estimate context: 🔴 ~85% — long session across 4 sprints + many tool calls.
-- Session notes implicit in: this report + 4 QA Round spec files + 18 commit messages.
-- Recommendation: Quân runs `/compact` before resuming, then paste:
-  ```
-  Đọc NIGHT_SHIFT_REPORT.md (đầu repo) để hiểu state.
-  Sprint 5 đã đóng với 21/21 E2E. Còn 18 commit local chưa push.
-  Action items: rotate 3 keys + decide merge strategy (xem report).
-  ```
+1. **Pre-existing lint noise (not introduced by me)**: `biome lint` reports
+   "Decorators are only valid on class declarations…" on *every* NestJS
+   controller (e.g. the untouched `mindmap.controller.delete`). The repo
+   `biome.json` is missing
+   `javascript.parser.unsafeParameterDecoratorsEnabled: true`. One-line fix,
+   but it changes lint behaviour repo-wide so I left it for you. **Recommended**:
+   add that flag so `pnpm lint` is green on the API. (My new pure-logic files
+   lint clean today only because they have no param decorators.)
+2. **Line endings**: new files committed as LF; git warns it'll convert to CRLF
+   on checkout (Windows `autocrlf`). Harmless, matches repo `.gitattributes`
+   behaviour for the rest of the tree.
+3. **Merge**: branch is local only. `git log --oneline main..night-shift/sprint-8-20260529`
+   shows the 4 commits. Suggested: review → fast-forward/merge into `main` → push.
+
+---
+
+## Tech debt still open (unchanged this sprint)
+
+| ID | Item | Note |
+|----|------|------|
+| TEC-04 | BE integration tests with real Postgres (testcontainers) | **Blocked tonight: no Docker.** Needs your machine to have Docker for the test container. |
+| TEC-05 | JWT instead of session table (stateless API) | Architecture change — deliberately NOT attempted overnight (per night-shift rules). |
+| TEC-06 | Some FE pages still rely on mock seed (mindmap template fallback) | FE change; best verified with e2e which couldn't run tonight. Deferred. |
+
+## Blocked items (need Quân's credentials/decisions) — see PENDING_HUMAN.md
+
+Unchanged from prior runs: Google OAuth (PH-001), Gemini key (PH-002), R2
+(PH-004), Resend (PH-005), Sentry (PH-006), hosting (PH-007), domain (PH-008),
+trademark (PH-009), real-user validation (PH-010). None touched tonight.
 
 ---
 
 ## What I did NOT do
 
-- ❌ Push any branch to GitHub remote
-- ❌ Merge anything into `main`
-- ❌ Delete other branches
-- ❌ Call any paid AI API (NIGHT_SHIFT_MODE held the line)
-- ❌ Modify `.env`/`.env.production` (only `.env.example` and `apps/api/.env`)
-- ❌ Touch infrastructure or CI/CD files
-- ❌ Run migrations on anything other than local Postgres
-- ❌ `npm publish`, `docker push`, etc.
+- ❌ No push to `origin` (nothing to `main`)
+- ❌ No merge into `main`
+- ❌ No deploy / docker push / migrations
+- ❌ No paid AI calls (NIGHT_SHIFT_MODE; mock adapter only — and no AI code touched)
+- ❌ No FE / infra / CI / `.env*` changes
+- ❌ Did not "fix" the repo-wide biome config unilaterally (flagged instead)
 
 ---
 
-_Generated by night-shift skill @ 2026-05-20 ~01:30 local time._
+## 🧠 Context Checkpoint
+
+- Estimate context: 🟠 **~55–60%** — one focused sprint, ~40 tool calls, 1 big
+  install. Lower than the Sprints 2–7 mega-run.
+- State is fully captured in: this report + `NIGHT_SHIFT_LOG.md` + the 4 commit
+  messages + the CHANGELOG `[Unreleased]` section.
+- **Recommendation**: if continuing, `/compact` first, then:
+  ```
+  Đọc NIGHT_SHIFT_REPORT.md + NIGHT_SHIFT_LOG.md. Sprint 8 (4 commits) trên
+  branch night-shift/sprint-8-20260529, 127/127 API unit tests pass, chưa push.
+  Việc cần: (1) thêm unsafeParameterDecoratorsEnabled vào biome.json, (2) review
+  + merge branch, (3) FE story tiêu thụ 3 endpoint mới (gallery/activity/forecast).
+  ```
+
+---
+
+_Generated by night-shift skill @ 2026-05-29 ~10:08 local time._
 _Awaiting Quân's review in the morning._
