@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -52,6 +53,16 @@ export class UserController {
   async stats(@CurrentUser() current: AuthedUser) {
     const stats = await this.statsService.getUserStats(current.id);
     return { success: true, data: stats };
+  }
+
+  @Get('me/activity')
+  @ApiOperation({ summary: 'Daily review activity for the last N days (?days=30, max 90)' })
+  async activity(@CurrentUser() current: AuthedUser, @Query('days') days?: string) {
+    const data = await this.statsService.getActivity(
+      current.id,
+      days !== undefined ? Number(days) : undefined,
+    );
+    return { success: true, data };
   }
 
   @Patch('me')
