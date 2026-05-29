@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SessionAuthGuard, type AuthedUser } from '../../auth/infrastructure/session-auth.guard';
 import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
 import { QuizService } from '../application/quiz.service';
+import { summariseAttempts } from '../domain/attempt-summary';
 import {
   CreateQuizDto,
   CreateQuizFromMindMapDto,
@@ -94,6 +95,8 @@ export class QuizController {
   @ApiOperation({ summary: "User's past attempts on this quiz" })
   async listAttempts(@Param('id') quizId: string, @CurrentUser() user: AuthedUser) {
     const items = await this.service.listAttempts(quizId, user.id);
-    return { success: true, data: items };
+    // `data` shape unchanged (FE intro screen reads the array); summary added
+    // under `meta` so the intro can show best/avg/last without recomputing.
+    return { success: true, data: items, meta: summariseAttempts(items) };
   }
 }
