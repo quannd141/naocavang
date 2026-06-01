@@ -7,6 +7,7 @@ const FOOTER_SECTIONS = [
       { href: '/#features', label: 'Tính năng' },
       { href: '/#pricing', label: 'Giá' },
       { href: '/library', label: 'Templates' },
+      { href: '/public/mindmaps', label: 'Thư viện công khai' },
       { href: '/changelog', label: 'Cập nhật' },
     ],
   },
