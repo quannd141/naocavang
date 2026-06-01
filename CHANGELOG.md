@@ -6,6 +6,24 @@ Lịch sử thay đổi của dự án. Format theo [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+### Sprint 10 — Legal & go-live prep (2026-06-01, night-shift)
+
+> Branch `night-shift/sprint-10-20260601`. FE/content-focused; verified by web
+> typecheck + next build (18 pages) + 6 consent unit tests.
+
+#### Added
+- **Trang pháp lý** `/privacy` + `/terms` (nội dung tiếng Việt, tham chiếu Nghị
+  định 13/2023/NĐ-CP) qua `LegalShell` — kèm banner "bản nháp, cần luật sư rà
+  soát". Footer trước đó link 404, nay đã resolve. (S10-01)
+- **Cookie consent banner** + helper `lib/consent.ts` (versioned, SSR-safe,
+  localStorage) mounted ở root layout. (S10-02)
+- **`apps/web/vitest.config.ts`** — giới hạn unit test trong `src/`, loại trừ
+  `e2e/**` (trước đó `pnpm --filter web test` fail vì quét nhầm Playwright specs).
+- Footer: link **"Thư viện công khai"** → `/public/mindmaps`. (S10-03)
+
+#### Notes / deferred
+- ⚠️ Privacy/ToS là **bản nháp** — cần luật sư rà soát trước launch (PENDING_HUMAN PH-011).
+
 ### Sprint 9 — AI Tutor + study reminders (2026-06-01, night-shift)
 
 > Branch `night-shift/sprint-9-20260601`. Mock-first, local-only. API unit
