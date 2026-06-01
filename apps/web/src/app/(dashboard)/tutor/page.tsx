@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MarkdownText } from '@/components/chat/MarkdownText';
-import { SUGGESTED_PROMPTS, streamMockResponse } from '@/lib/mock/chat';
+import { SUGGESTED_PROMPTS, streamMockResponse, streamText } from '@/lib/mock/chat';
+import { ApiError, tutorApi } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
 interface Message {
@@ -41,14 +42,27 @@ export default function TutorPage() {
     setInput('');
     setStreaming(true);
 
+    const appendToken = (token: string) =>
+      setMessages((m) =>
+        m.map((msg) =>
+          msg.id === assistantId ? { ...msg, content: msg.content + token } : msg,
+        ),
+      );
+
     try {
-      await streamMockResponse(prompt, (token) => {
-        setMessages((m) =>
-          m.map((msg) =>
-            msg.id === assistantId ? { ...msg, content: msg.content + token } : msg,
-          ),
-        );
-      });
+      // Ask the real BE, then type the answer out for a streaming feel.
+      // (True server-push streaming is deferred — EventSource can't send the
+      // Bearer header this app uses.)
+      const { answer } = await tutorApi.ask(prompt);
+      await streamText(answer, appendToken);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 0) {
+        // BE unreachable — fall back to the local mock so the demo still works.
+        await streamMockResponse(prompt, appendToken);
+      } else {
+        const msg = err instanceof ApiError ? err.message : (err as Error).message;
+        appendToken(`⚠️ ${msg}`);
+      }
     } finally {
       setMessages((m) =>
         m.map((msg) => (msg.id === assistantId ? { ...msg, streaming: false } : msg)),
@@ -72,7 +86,7 @@ export default function TutorPage() {
             </div>
           </div>
         </div>
-        <Badge variant="outline">Demo mode (mock streaming)</Badge>
+        <Badge variant="outline">Beta</Badge>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 bg-muted/20">
