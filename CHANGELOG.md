@@ -6,6 +6,25 @@ Lịch sử thay đổi của dự án. Format theo [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+### Sprint 9 — AI Tutor + study reminders (2026-06-01, night-shift)
+
+> Branch `night-shift/sprint-9-20260601`. Mock-first, local-only. API unit
+> tests 137 → **147 pass**; web typecheck + build green.
+
+#### Added
+- **AI Tutor "Cá Vàng GPT"** — `POST /tutor/chat` (stateless) trả lời câu hỏi
+  học tập, có thể kèm ngữ cảnh mind map. FE `/tutor` đã nối BE thật, giữ hiệu
+  ứng gõ chữ (typewriter), fallback mock khi BE offline. (S9-01..03)
+- **Daily reminder digest** — `ReminderService.runDailyDigest` + `@Cron` 07:00
+  giờ VN (in-process, không cần Redis): chọn user bật nhắc nhở + có thẻ đến hạn,
+  gửi email tóm tắt theo bộ thẻ. `POST /reminders/run` (admin) để chạy thủ công. (S9-04..05)
+- **EmailPort + MockEmailAdapter** (log thay vì gửi thật cho tới khi có key — PH-005).
+
+#### Notes / deferred
+- Tutor dùng MockAiAdapter (mock-mode); usage chưa ghi `AiUsageLog` (enum
+  `AiOperation` chưa có `tutor_chat` — cần migration sau) nhưng vẫn trừ quota.
+- True server-push streaming hoãn lại (EventSource không gửi được Bearer header).
+
 ### Sprint 8 — Public gallery + learning analytics (2026-05-29, night-shift)
 
 > Trên branch `night-shift/sprint-8-20260529`. Toàn bộ BE, pure-logic, phủ
