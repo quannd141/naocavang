@@ -6,6 +6,39 @@ Lịch sử thay đổi của dự án. Format theo [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+### Sprint 11 — F6 PDF upload (2026-06-01, night-shift)
+
+> Branch `night-shift/sprint-11-20260601`. Mock-first, local-only. API unit
+> tests 147 → **194 pass** (+47); web 6 → **13** (+7); api typecheck + web
+> typecheck + next build (19 pages, `/upload` mới) đều xanh.
+
+#### Added
+- **PDF upload → mind map + flashcard tự động** (F6). Luồng: validate → trích
+  xuất text → AI sinh mind map + flashcard → lưu qua service sẵn có. Mind map
+  được đánh dấu `sourceType: 'pdf'`. (S11-01..05)
+- **`POST /ingest/pdf`** — upload multipart (FileInterceptor, cap 10MB),
+  SessionAuthGuard. Trả về `{ mindmapId, deckId, title, cardCount, meta }`. (S11-04)
+- **Ingest domain thuần** (test kỹ, framework-free): `validatePdfUpload` +
+  `assertEnoughText`, `aiMindmapToCanvas` (chuyển graph keyed-by-id của AI →
+  mảng node + layout cây tất định, đã verify khớp `mindMapDataSchema`),
+  `normaliseIngestedCards`, prompt builders có giới hạn token. (S11-01, S11-03)
+- **PdfExtractor port** + `MockPdfExtractor` (night-shift) + `PdfParseExtractor`
+  (thật, lazy-import `pdf-parse` để né bug import-time; chưa load trong night-shift). (S11-02)
+- **`MindMapService.createFromIngest`** — tạo mind map từ tài liệu, stamp `pdf`. (S11-03)
+- **FE `/upload`** — kéo-thả + chọn file, tiêu đề/môn học tuỳ chọn, trạng thái
+  busy/lỗi, card kết quả link tới mind map + bộ thẻ; `ingestApi.uploadPdf`
+  (FormData) + `lib/pdf-upload` (validate phía client). Thêm mục "Tải PDF" ở sidebar. (S11-05)
+
+#### Changed
+- **biome.json**: bật `javascript.parser.unsafeParameterDecoratorsEnabled` —
+  NestJS DI (`@Inject`, guards) trước đây bị Biome báo parse-error khắp repo,
+  che lấp lint thật. Chỉ nới parser, không đổi rule.
+
+#### Notes / deferred
+- Ingest hiện **stateless**: không lưu bytes PDF (chờ R2 — PH-004). `PdfParseExtractor`
+  thật chưa có test (cần PDF fixture / Docker); night-shift chạy mock.
+- Chất lượng mind map/flashcard thật phụ thuộc Gemini key (PH-002) — hiện mock.
+
 ### Sprint 10 — Legal & go-live prep (2026-06-01, night-shift)
 
 > Branch `night-shift/sprint-10-20260601`. FE/content-focused; verified by web

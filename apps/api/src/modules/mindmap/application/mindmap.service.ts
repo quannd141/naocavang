@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ZodError } from 'zod';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import { mindMapDataSchema } from '../domain/mindmap-data.schema';
@@ -117,6 +122,31 @@ export class MindMapService {
         tags: dto.tags ?? [],
         sourceTemplateId: dto.sourceTemplateId ?? null,
         sourceType: dto.sourceTemplateId ? 'template' : 'manual',
+      },
+    });
+  }
+
+  /**
+   * Create a mind map from an ingested document (F6 — PDF upload). Bypasses the
+   * public CreateMindMapDto (the data is machine-generated, not user-supplied)
+   * and stamps `sourceType: 'pdf'` so the library can badge its origin. Still
+   * runs schema validation on the transformed data before persisting.
+   */
+  async createFromIngest(
+    userId: string,
+    input: { title: string; description?: string; data: Record<string, unknown>; subject?: string },
+  ) {
+    this.validateData(input.data);
+    return this.prisma.mindMap.create({
+      data: {
+        userId,
+        title: input.title,
+        description: input.description ?? null,
+        data: input.data as never,
+        subject: (input.subject as never) ?? null,
+        tags: [],
+        sourceTemplateId: null,
+        sourceType: 'pdf',
       },
     });
   }

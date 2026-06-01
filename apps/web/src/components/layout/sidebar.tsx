@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import {
   BookMarked,
   GraduationCap,
@@ -10,11 +9,14 @@ import {
   Network,
   Settings,
   Sparkles,
+  Upload,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Tổng quan', icon: Layout },
+  { href: '/upload', label: 'Tải PDF', icon: Upload },
   { href: '/mindmaps', label: 'Mind maps', icon: Network },
   { href: '/flashcards', label: 'Flashcards', icon: BookMarked },
   { href: '/quizzes', label: 'Quizzes', icon: GraduationCap },

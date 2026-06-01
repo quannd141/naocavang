@@ -62,6 +62,11 @@
 
 - [apps/api/src/modules/ai/infrastructure/gemini.adapter.ts](apps/api/src/modules/ai/infrastructure/gemini.adapter.ts) — TODO Sprint 3 wire real SDK
 
+> **Update 2026-06-01 (Sprint 11):** Luồng F6 (PDF → mind map + flashcard) đã
+> build xong **mock-first** (`modules/ingest`). Khi có `GEMINI_API_KEY`, bỏ
+> `NIGHT_SHIFT_MODE` là `AiRoutingService` tự route sang Gemini — không cần sửa
+> code ingest. Chỉ cần verify chất lượng output thật.
+
 ---
 
 ## PH-003 — Anthropic Claude API key (v0.2)
@@ -118,6 +123,12 @@
 
 - Free tier (10GB + $0 egress) tốt cho MVP
 - Cần cho upload PDF (Sprint 3) + image embed mind map (Sprint 2)
+
+> **Update 2026-06-01 (Sprint 11):** F6 PDF upload đã build mock-first và hoạt
+> động **không cần R2** — ingest hiện *stateless* (không lưu file gốc, chỉ lưu
+> mind map + flashcard sinh ra). R2 chỉ cần khi muốn (a) lưu/đọc lại file PDF
+> gốc, (b) wire `PdfParseExtractor` thật thay cho `MockPdfExtractor`. Đến lúc đó
+> bind `PDF_EXTRACTOR` qua useFactory (đã sẵn) + cung cấp R2 creds.
 
 ---
 

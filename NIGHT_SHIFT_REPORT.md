@@ -1,107 +1,94 @@
-# 🌙 Night Shift Report — 2026-06-01 (Sprint 10)
+# 🌙 Night Shift Report — 2026-06-01 (Sprint 11)
 
 **Project**: Não Cá Vàng (`nao-ca-vang`)
-**Mode**: NIGHT_SHIFT_MODE=true (local-only, no push to main)
-**Branch**: `night-shift/sprint-10-20260601` (off `main` @ e6c51c5)
-**Theme**: Legal & go-live prep
-**Commits awaiting review**: **3** (all on the feature branch)
-
----
+**Mode**: NIGHT_SHIFT_MODE=true (local-only, no push to main, mock adapters)
+**Branch**: `night-shift/sprint-11-20260601` (off `main` @ 2ecbfa7)
+**Theme**: F6 — PDF upload (mock-first)
+**Commits awaiting review**: **6** (all on the feature branch)
 
 ## Summary
 
+✅ **Done**: 5 / 5 stories + 1 lint chore
+🟡 **Partial**: 0
+⏸️ **Skipped**: 0
+🧪 **Tests**: API 147 → **194** (+47) · Web 6 → **13** (+7) — all green
+🔧 **Verify**: api `tsc` ✓ · web `tsc` ✓ · `next build` ✓ (19 pages) · biome ✓
+
+The full F6 pipeline now exists end-to-end behind mocks: a user uploads a PDF on
+`/upload`, the API extracts text, asks the AI for a mind map + flashcards, and
+persists both — the mind map stamped `sourceType: 'pdf'`, the deck linked to it.
+In night-shift everything runs on `MockPdfExtractor` + `MockAiAdapter`, so no
+external/paid call happens. Flipping `NIGHT_SHIFT_MODE` off + adding a Gemini key
+(PH-002) routes to the real model with **no ingest code change**.
+
+## Done Stories
+
 | Story | Commit | What |
 |-------|--------|------|
-| S10-01 | `b8fb22e` | `/privacy` + `/terms` pages (VN draft + LegalShell + review banner) |
-| S10-02 | `e94a2a8` | Cookie consent banner + versioned `consent` helper + `vitest.config.ts` |
-| S10-03 | `7a44f67` | Footer link to public gallery `/public/mindmaps` |
+| S11-01 | `39c7b50` | Ingest domain: PDF validation, AI-graph→canvas transform (+ tree layout, schema-verified), card normalise, prompt builders — 31 tests |
+| S11-02 | `0391530` | `PdfExtractor` port + `MockPdfExtractor` + lazy `PdfParseExtractor` — 2 tests |
+| (chore) | `ac4d36f`¹ | biome: enable `unsafeParameterDecoratorsEnabled` (repo-wide DI lint noise) |
+| S11-03 | `ac4d36f` | `IngestService.ingestPdf` orchestration + `MindMapService.createFromIngest` — 13 tests |
+| S11-04 | `c9d6992` | `POST /ingest/pdf` controller (multer, 10MB cap) + `IngestModule` + AppModule wiring — 2 tests |
+| S11-05 | `e8342d5` | FE `/upload` page + `ingestApi.uploadPdf` (FormData) + `lib/pdf-upload` client validation + sidebar link — 7 web tests |
 
-**Web unit tests**: **0 → 6 PASS** (first src unit tests — consent helper)
-**Web typecheck**: clean · **Web build**: **18/18 pages** (+`/privacy` +`/terms`, both static)
-**Biome lint**: clean on all new files
-**Diff**: 8 files (FE only; no BE, no infra, no credentials)
+¹ chore + S11-03 are two separate commits; `ac4d36f` is the S11-03 feature commit, the chore is its parent.
 
----
+## Architecture notes
 
-## Highlights
+- **No migration.** Reused the existing `MindMapSourceType.pdf` enum + transient
+  ingest (uploaded bytes are not stored). Safe given no Docker/Postgres locally.
+- **Transform is the heart.** The AI/mock emits a graph keyed by node id
+  (`{rootId, nodes:{...}, edges}`); the canvas/persistence schema wants a flat
+  array with `data.label` + positions. `aiMindmapToCanvas` does that conversion
+  with a deterministic BFS tree layout, and a test asserts the output parses
+  against the real `mindMapDataSchema` — so ingest can't silently persist a map
+  the editor can't open.
+- **Mock-first ports.** `PdfExtractor` bound to mock in night-shift; the real
+  `pdf-parse` adapter lazy-imports the lib (its module-load runs demo code that
+  reads a sample file and throws) so it's never touched in night-shift/tests.
 
-- **Legal pages** rendered through a shared `LegalShell` (prose styling without a
-  typography plugin, last-updated date, prominent **"bản nháp — cần luật sư rà
-  soát"** banner). The footer already linked `/privacy` + `/terms` (404 until
-  now); they resolve.
-- **Cookie consent**: functional-storage notice (no tracking opt-in), versioned
-  so a policy change re-prompts; `parseConsent` is pure + unit-tested, banner is
-  SSR-safe (decides after mount to avoid hydration mismatch).
-- **Fixed a broken script**: `pnpm --filter web test` previously failed because
-  zero-config vitest scooped up the Playwright `e2e/**` specs. Added
-  `apps/web/vitest.config.ts` scoping units to `src/`. Now green.
+## Decisions I made (please sanity-check)
 
----
+1. **Stateless ingest** (no R2). Simpler + unblocks F6 now; re-uploading the
+   original PDF later needs R2 (PH-004). Logged in PENDING_HUMAN.
+2. **Bypassed the public `CreateMindMapDto`** for ingest via a dedicated
+   `createFromIngest` service method (machine data, not user input) so users
+   can't spoof `sourceType`. Still schema-validated before persist.
+3. **Enabled `unsafeParameterDecoratorsEnabled` in biome.json.** One-line parser
+   opt-in; NestJS DI already uses param decorators everywhere, so this only
+   removes false parse-errors. No lint rule changed.
+4. **Flashcards best-effort.** If the AI returns no usable cards, the upload
+   still succeeds with just the mind map (deckId = null) rather than 400-ing.
 
-## Decisions I made unilaterally (Quân check)
+## Not done (by design / deferred)
 
-- **Privacy/ToS are DRAFTS** — I wrote reasonable VN content referencing Nghị
-  định 13/2023/NĐ-CP, but flagged them in-page + logged **PH-011** for lawyer
-  review. I did NOT claim legal validity or fill in legal-entity specifics.
-- **Did not create `/refund` + `/dmca`** (footer links them) — those need
-  business decisions (refund terms). Noted in PH-011.
-- **Consent is an acknowledgement, not a tracking opt-in** — the app only uses
-  functional storage, so a single "Đã hiểu" dismiss is appropriate (no granular
-  cookie categories).
+- Real `PdfParseExtractor` is **untested** — needs a PDF fixture or Docker. Mock
+  path is fully tested.
+- Real AI output quality (Gemini) unverified — PH-002.
+- `tutor_chat` enum migration (carried over, unrelated to F6).
 
----
+## Did NOT do (night-shift guardrails)
 
-## ⚠️ Verification limits
+- ❌ No deploy, no push to `main`, no `--force`.
+- ❌ No real external/paid API calls — `MockPdfExtractor` + `MockAiAdapter` only.
+- ❌ No secrets touched, no migration run.
+- ❌ Did not merge — PR is yours to merge.
 
-- Content/UI sprint → verified by **web typecheck + next build (18 pages) + 6
-  consent unit tests**. Not e2e-tested (no Postgres/Docker) — but legal pages are
-  static and the banner logic is unit-covered.
+## Recommended tomorrow (in order)
 
-## Morning check
-
-```
-next build already passes. To eyeball:
-/privacy , /terms  → draft legal pages with amber "bản nháp" banner
-any page first visit → cookie banner at bottom; "Đã hiểu" dismisses (persists)
-footer → "Thư viện công khai" → /public/mindmaps
-```
-
----
-
-## Follow-ups / tech debt
-
-| Item | Note |
-|------|------|
-| **PH-011** legal review of Privacy/ToS | 🔴 before launch |
-| `/refund` + `/dmca` pages | footer links them; need content decision |
-| Reusable Skeleton / EmptyState components | loading polish, deferred this sprint |
-| (carried) `tutor_chat` enum migration, ResendEmailAdapter (PH-005), biome param-decorator config, TEC-04/05/06 | unchanged |
-
-## Blocked (need Quân) — PENDING_HUMAN.md
-
-+ **PH-011** (legal review) added this sprint. Others unchanged.
-
----
-
-## What I did NOT do
-
-- ❌ No push to `origin` / merge to main · ❌ No deploy · ❌ No credentials/keys
-- ❌ No claim of legal validity (drafts flagged) · ❌ No new runtime dependency
-- ❌ No BE/infra changes
-
----
+1. `git log night-shift/sprint-11-20260601 --oneline` to skim the 6 commits.
+2. Review the transform (`mindmap-transform.ts`) — it's the riskiest logic.
+3. Merge the PR (branch pushed; see PR description I'll provide).
+4. To see it for real: provide `GEMINI_API_KEY` (PH-002), run `apps/api` with
+   `NIGHT_SHIFT_MODE` unset, and upload a text-based PDF.
 
 ## 🧠 Context Checkpoint
 
-- Estimate context: 🔴 **~80%** — long multi-sprint session (8 → FE → 9 → 10).
-- State in: this report + `NIGHT_SHIFT_LOG.md` + 3 commits + CHANGELOG Sprint 10 + PH-011.
-- **Recommendation**: `/compact` before next task. Resume hint:
-  ```
-  Đọc NIGHT_SHIFT_REPORT.md. Sprint 10 (3 commits) trên branch
-  night-shift/sprint-10-20260601, web build 18/18, 6 unit tests, chưa push.
-  Việc: review + merge (PR); PH-011 rà soát pháp lý; cân nhắc /refund /dmca.
-  ```
+- Estimate context: 🟠 ~70% (recon agent + ~15 file reads + 6 stories).
+- Recommend `/compact` before the next sprint.
+- State fully reconstructable from: this report + CHANGELOG `[Unreleased]` +
+  `git log night-shift/sprint-11-20260601` + NIGHT_SHIFT_LOG.md.
 
 ---
-
-_Generated by night-shift skill @ 2026-06-01 ~11:55 local time. Awaiting Quân's review._
+_Generated by night-shift skill @ 2026-06-01_
