@@ -116,6 +116,47 @@ export class AiRoutingService {
   }
 
   /**
+   * Free-form tutor chat. Mirrors `generate`'s quota + model selection but does
+   * NOT write an AiUsageLog row — the `AiOperation` enum has no `tutor_chat`
+   * value yet, and adding one needs a migration. Quota is still enforced and
+   * decremented so chat counts against the user's monthly AI budget.
+   *
+   * TODO(migration): add `tutor_chat` to AiOperation + log tutor usage here.
+   */
+  async chat(req: {
+    userId: string;
+    prompt: string;
+    systemPrompt?: string;
+  }): Promise<RoutedGenerationResponse> {
+    if (!(await this.userService.hasAiQuota(req.userId))) {
+      throw new ForbiddenException({
+        code: 'AI_QUOTA_EXCEEDED',
+        message: 'Bạn đã hết quota AI tháng này. Nâng cấp Premium để có thêm.',
+      });
+    }
+
+    const user = await this.userService.findById(req.userId);
+    const model = this.selectModel(user.tier, 'tutor_chat');
+    const provider = this.providers.find((p) => p.supports(model));
+    if (!provider) {
+      throw new Error(`No provider available for model ${model}`);
+    }
+
+    const result = await provider.generate({
+      task: 'tutor_chat',
+      model,
+      prompt: req.prompt,
+      systemPrompt: req.systemPrompt,
+    });
+    const costUsd = computeAiCost(model, result.inputTokens, result.outputTokens);
+
+    await this.userService.decrementAiQuota(req.userId);
+    this.logger.log(`Tutor chat: user=${req.userId} model=${model} cost=$${costUsd.toFixed(6)}`);
+
+    return { ...result, model, costUsd };
+  }
+
+  /**
    * Select model based on user tier and task type.
    *
    * - Free tier:        Gemini Flash 2.0 (cheapest)
