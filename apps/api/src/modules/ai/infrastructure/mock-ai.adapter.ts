@@ -44,6 +44,8 @@ export class MockAiAdapter implements AiProvider {
         return JSON.stringify(MOCK_FLASHCARDS);
       case 'quiz_gen':
         return JSON.stringify(MOCK_QUIZ);
+      case 'tutor_chat':
+        return MOCK_TUTOR_REPLY;
     }
   }
 }
@@ -121,6 +123,17 @@ const MOCK_FLASHCARDS = {
     },
   ],
 };
+
+/** Deterministic prose reply (markdown) for tutor chat in mock/night-shift mode. */
+const MOCK_TUTOR_REPLY = [
+  'Câu hỏi hay đấy! 🐠 Đây là câu trả lời **giả lập (mock)** để bạn thấy luồng hoạt động:',
+  '',
+  '1. **Ý chính**: mình tóm tắt khái niệm bạn hỏi thành một ý dễ nhớ.',
+  '2. **Ví dụ**: kèm một ví dụ gần gũi với chương trình học Việt Nam.',
+  '3. **Mẹo nhớ**: gợi ý cách ghi nhớ hoặc liên hệ thực tế.',
+  '',
+  'Khi bạn cấu hình API key thật, Cá Vàng GPT sẽ trả lời chi tiết theo đúng câu hỏi của bạn.',
+].join('\n');
 
 const MOCK_QUIZ = {
   questions: [

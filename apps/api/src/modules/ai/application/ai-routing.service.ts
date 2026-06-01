@@ -13,7 +13,8 @@ import {
 
 export interface RoutedGenerationRequest {
   userId: string;
-  task: AiTaskType;
+  /** Generation tasks only — tutor chat bypasses this service (see TutorService). */
+  task: Exclude<AiTaskType, 'tutor_chat'>;
   prompt: string;
   systemPrompt?: string;
   maxTokens?: number;
