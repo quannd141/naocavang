@@ -76,7 +76,7 @@ export async function apiRequest<T>(path: string, opts: ApiRequestOptions = {}):
   if (!res.ok) {
     const code = (body as { code?: string })?.code;
     const message = (body as { message?: string | string[] })?.message;
-    const msg = Array.isArray(message) ? message.join('. ') : message ?? `HTTP ${res.status}`;
+    const msg = Array.isArray(message) ? message.join('. ') : (message ?? `HTTP ${res.status}`);
     throw new ApiError(msg, res.status, code, body);
   }
 
@@ -259,10 +259,17 @@ export const mindmapApi = {
   }) => apiRequest<MindMapFull>('/mindmaps', { method: 'POST', body: input }),
   createFromTemplate: (templateId: string) =>
     apiRequest<MindMapFull>(`/mindmaps/from-template/${templateId}`, { method: 'POST' }),
-  clone: (id: string) =>
-    apiRequest<MindMapFull>(`/mindmaps/${id}/clone`, { method: 'POST' }),
-  update: (id: string, input: Partial<{ title: string; description: string; data: object; tags: string[]; isPublic: boolean }>) =>
-    apiRequest<MindMapFull>(`/mindmaps/${id}`, { method: 'PATCH', body: input }),
+  clone: (id: string) => apiRequest<MindMapFull>(`/mindmaps/${id}/clone`, { method: 'POST' }),
+  update: (
+    id: string,
+    input: Partial<{
+      title: string;
+      description: string;
+      data: object;
+      tags: string[];
+      isPublic: boolean;
+    }>,
+  ) => apiRequest<MindMapFull>(`/mindmaps/${id}`, { method: 'PATCH', body: input }),
   delete: (id: string) => apiRequest<void>(`/mindmaps/${id}`, { method: 'DELETE' }),
 };
 
@@ -285,7 +292,9 @@ export interface TemplateFull extends TemplateSummary {
 
 export const templateApi = {
   list: (filters?: { subject?: string; grade?: string }) => {
-    const qs = filters ? `?${new URLSearchParams(filters as Record<string, string>).toString()}` : '';
+    const qs = filters
+      ? `?${new URLSearchParams(filters as Record<string, string>).toString()}`
+      : '';
     return apiRequest<TemplateSummary[]>(`/templates${qs}`);
   },
   get: (id: string) => apiRequest<TemplateFull>(`/templates/${id}`),
@@ -323,6 +332,60 @@ export const tutorApi = {
       method: 'POST',
       body: { question, ...context },
     }),
+};
+
+// ---------- Ingest (PDF upload — F6) ----------
+
+export interface IngestResult {
+  mindmapId: string;
+  deckId: string | null;
+  title: string;
+  cardCount: number;
+  meta: {
+    pageCount: number;
+    textLength: number;
+    models: { mindmap: string; flashcard: string };
+  };
+}
+
+export const ingestApi = {
+  /**
+   * Upload a PDF as multipart/form-data. Cannot reuse apiRequest (which forces a
+   * JSON content-type) — the browser must set the multipart boundary itself, so
+   * we deliberately omit content-type here.
+   */
+  async uploadPdf(file: File, opts?: { title?: string; subject?: string }): Promise<IngestResult> {
+    const url = `${BASE_URL}/ingest/pdf`;
+    const form = new FormData();
+    form.append('file', file);
+    if (opts?.title) form.append('title', opts.title);
+    if (opts?.subject) form.append('subject', opts.subject);
+
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers.authorization = `Bearer ${token}`;
+
+    let res: Response;
+    try {
+      res = await fetch(url, { method: 'POST', headers, body: form, credentials: 'omit' });
+    } catch (err) {
+      throw new ApiError(
+        `Không kết nối được API (${(err as Error).message}). Kiểm tra BE đang chạy?`,
+        0,
+        'NETWORK_ERROR',
+      );
+    }
+
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    const body = isJson ? await res.json() : await res.text();
+    if (!res.ok) {
+      const code = (body as { code?: string })?.code;
+      const message = (body as { message?: string | string[] })?.message;
+      const msg = Array.isArray(message) ? message.join('. ') : (message ?? `HTTP ${res.status}`);
+      throw new ApiError(msg, res.status, code, body);
+    }
+    return (body as ApiEnvelope<IngestResult>).data;
+  },
 };
 
 // ---------- Flashcards ----------
@@ -428,7 +491,10 @@ export const quizApi = {
   list: () => apiRequest<QuizSummary[]>('/quizzes'),
   get: (id: string, reveal = false) =>
     apiRequest<QuizFull>(`/quizzes/${id}${reveal ? '?reveal=true' : ''}`),
-  createFromMindmap: (mindmapId: string, opts?: { title?: string; difficulty?: 'easy' | 'medium' | 'hard' }) =>
+  createFromMindmap: (
+    mindmapId: string,
+    opts?: { title?: string; difficulty?: 'easy' | 'medium' | 'hard' },
+  ) =>
     apiRequest<QuizFull>(`/quizzes/from-mindmap/${mindmapId}`, {
       method: 'POST',
       body: opts ?? {},
@@ -443,8 +509,7 @@ export const quizApi = {
       method: 'POST',
       body: { answers, timeSpentSec },
     }),
-  listAttempts: (quizId: string) =>
-    apiRequest<QuizAttemptSummary[]>(`/quizzes/${quizId}/attempts`),
+  listAttempts: (quizId: string) => apiRequest<QuizAttemptSummary[]>(`/quizzes/${quizId}/attempts`),
 };
 
 export interface QuizAttemptSummary {
@@ -482,8 +547,7 @@ export const flashcardApi = {
     }),
   updateDeck: (id: string, input: { title?: string }) =>
     apiRequest<FlashcardDeckFull>(`/flashcards/decks/${id}`, { method: 'PATCH', body: input }),
-  deleteDeck: (id: string) =>
-    apiRequest<void>(`/flashcards/decks/${id}`, { method: 'DELETE' }),
+  deleteDeck: (id: string) => apiRequest<void>(`/flashcards/decks/${id}`, { method: 'DELETE' }),
   getDue: (deckId: string, limit = 20) =>
     apiRequest<FlashcardCard[]>(`/flashcards/decks/${deckId}/due?limit=${limit}`),
   review: (cardId: string, quality: 0 | 1 | 2 | 3 | 4) =>
