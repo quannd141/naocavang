@@ -241,11 +241,31 @@
 
 ---
 
+## PH-011 — Rà soát pháp lý Privacy Policy + Terms of Service
+
+**Priority:** 🔴 HIGH (MUST trước launch)
+**Estimated:** ~1-2 giờ luật sư / tư vấn pháp lý
+
+### What Quân làm
+
+1. Đọc bản nháp tại [/privacy](apps/web/src/app/privacy/page.tsx) + [/terms](apps/web/src/app/terms/page.tsx)
+2. Nhờ luật sư / người có chuyên môn rà soát theo Nghị định 13/2023/NĐ-CP (PDPD) + Luật Bảo vệ người tiêu dùng
+3. Bổ sung: thông tin pháp nhân thật, địa chỉ, cơ chế khiếu nại, chính sách hoàn tiền (/refund), DMCA (/dmca — footer đang link nhưng chưa có trang)
+4. Xoá banner "bản nháp" trong `LegalShell` khi nội dung đã được duyệt
+
+### Why blocked
+
+- Agent soạn được bản nháp nhưng **không thể đảm bảo tính pháp lý** — cần con người có thẩm quyền duyệt
+- Các trang `/refund`, `/dmca` (footer link) chưa tạo — chờ quyết định nội dung từ Quân
+
+---
+
 ## 📋 Tổng kết priority
 
 | # | Task | Priority | When |
 |---|------|----------|------|
 | PH-001 | Google OAuth | 🔴 HIGH | Trước Sprint 1 end |
+| PH-011 | Rà soát pháp lý Privacy/ToS | 🔴 HIGH | Trước launch |
 | PH-009 | Trademark check | 🔴 HIGH | Trước Sprint 4 |
 | PH-010 | Validate 3-5 user thật | 🔴 HIGH | Trước Sprint 3 |
 | PH-002 | Gemini API key | 🟡 MED | Trước Sprint 3 |
