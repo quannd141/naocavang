@@ -1,45 +1,53 @@
-# 🌙 NIGHT_SHIFT_LOG — Sprint 8 — 2026-05-29
+# 🌙 NIGHT_SHIFT_LOG — Sprint 9 — 2026-06-01
 
-**Branch:** `night-shift/sprint-8-20260529` (off `main`)
+**Branch:** `night-shift/sprint-9-20260601` (off `main` @ 817f7f2)
 **Mode:** NIGHT_SHIFT_MODE=true (mock-first, local-only, no push to main)
-**Start:** 2026-05-29 ~09:50 local
-
-> Previous sprints (1–7) merged into `main` and pushed to `origin`. This run
-> works on a fresh feature branch; nothing pushed to `origin/main`.
-
----
+**Theme:** AI Tutor (F5) + study reminders — both mock-first
+**Start:** 2026-06-01 ~10:30 local
 
 ## Pre-flight ✅
 
-- [x] On feature branch `night-shift/sprint-8-20260529` (NOT main)
-- [x] `node_modules` installed via `corepack pnpm@9.12.0 install` (pnpm not on PATH; corepack used)
-- [x] `prisma generate` run (fixed `Prisma.Decimal` undefined in export.service.spec)
-- [x] **Baseline green: 104/104 API unit tests pass**
-- [⚠️] Docker NOT available → no local Postgres → BE-integration-with-real-DB + Playwright e2e CANNOT run this session. Scope limited to unit-testable BE logic (vitest + mocked Prisma).
+- [x] On feature branch (NOT main)
+- [x] Deps already present: `@nestjs/schedule`, `@nestjs/bullmq`, `bullmq`, `rxjs`,
+      `@google/generative-ai` — **no new dependency needed**
+- [x] node_modules installed (corepack pnpm@9.12.0), prisma client generated
+- [⚠️] Docker NOT available → no Redis → **BullMQ cannot run**; use `@nestjs/schedule`
+      `@Cron` (in-process, no Redis) for reminders. Cron execution itself not
+      runnable overnight → verify reminder/tutor **logic via vitest** + typecheck + build.
 
-## Theme: Public gallery + learning analytics (all BE, unit-testable)
+## Key design constraints (mock-first, migration-free)
+
+- **AiUsageLog.operation is a Prisma enum** (`AiOperation`) → adding a `tutor_chat`
+  value would need a migration (can't apply, no DB). So **TutorService calls the AI
+  provider directly** (not via AiRoutingService), still checks/decrements quota, and
+  skips the enum-constrained usage log (flagged for later). `'tutor_chat'` is added
+  only to the **TS** `AiTaskType` union (not the DB enum).
+- **Tutor streaming**: browser `EventSource` can't send the Bearer header this app
+  uses, so true SSE push is deferred. BE returns the **full answer** (`POST /tutor/chat`);
+  the existing FE keeps its typewriter reveal for the streaming feel.
+- **Tutor is stateless** (no conversation persistence) → no new DB model, no migration.
+
+## Stories
 
 | # | Story | Verify | Status |
 |---|-------|--------|--------|
-| S8-01 | Public mindmap gallery list — `GET /public/mindmaps` (closes `public/list` TODO stub) | vitest (mock Prisma) | ✅ done `f157a08` |
-| S8-02 | Review activity analytics — `StatsService.getActivity` + pure `computeDailyReviewCounts` | vitest | ✅ done `bb071b9` |
-| S8-03 | Quiz attempt score summary (best/avg/last) — pure helper + wire into attempt history | vitest | ✅ done `b468269` |
-| S8-04 | (stretch) Flashcard due-forecast pure function | vitest | ✅ done `2206283` |
-| S8-05 | Wrap: typecheck + full test + CHANGELOG + report | — | ✅ done |
-
-## Constraints applied
-
-- ❌ No real API calls (NIGHT_SHIFT_MODE mock adapters only)
-- ❌ No deploy / no `git push origin main`
-- ❌ No e2e / no migrations (docker unavailable)
-- ✅ TDD red-green-refactor, atomic commit per story
-- ✅ All new logic covered by unit tests before commit
+| S9-01 | AI `tutor_chat`: port task + MockAdapter prose + pure `buildTutorPrompt`/`chunkReply` | vitest | ✅ `96e7ca0` |
+| S9-02 | TutorModule: service (direct provider + quota) + `POST /tutor/chat` | vitest | ✅ `098a931` |
+| S9-03 | FE: wire `/tutor` to real BE (`tutorApi.ask`), keep typewriter | typecheck+build | ✅ `d77dbc0` |
+| S9-04 | Email port + MockEmailAdapter + reminder digest domain (pure) | vitest | ✅ `5b610ca` |
+| S9-05 | ReminderModule: `runDailyDigest` + `@Cron` 7AM ICT + dev trigger endpoint | vitest | ✅ `de857e6` |
+| S9-06 | Wrap: typecheck + full test + build + CHANGELOG + report | — | ✅ done |
 
 ## Progress log
 
-- 09:50 Pre-flight: installed deps via corepack pnpm@9.12.0 (2 attempts, EPERM on store first time), `prisma generate`, baseline 104/104.
-- 09:54 S8-01 public gallery — committed `f157a08` (108 tests).
-- 09:59 S8-02 review activity — committed `bb071b9` (114 tests).
-- 10:02 S8-03 quiz attempt summary — committed `b468269` (119 tests).
-- 10:05 S8-04 due-forecast — committed `2206283` (127 tests).
-- 10:08 Wrap: CHANGELOG + report. **Final: 127/127 API unit tests, api typecheck clean.**
+- 10:30 Pre-flight: branch off main@817f7f2, deps verified (schedule/rxjs present).
+- S9-01 `96e7ca0` (134 tests) · S9-02 `098a931` (137) · S9-03 `d77dbc0` (web build ok)
+- S9-04 `5b610ca` (143) · S9-05 `de857e6` (147)
+- Final: **API 147/147**, api+web typecheck clean, web build 16/16 pages.
+
+## Constraints applied
+
+- ❌ No real API calls (mock provider + mock email adapter that logs)
+- ❌ No deploy / no push to main / no migrations applied
+- ✅ TDD, atomic commit per story, all new logic unit-tested before commit
+

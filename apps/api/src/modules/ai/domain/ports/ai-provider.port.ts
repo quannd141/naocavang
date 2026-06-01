@@ -11,7 +11,7 @@
 
 export const AI_PROVIDERS_TOKEN = Symbol('AI_PROVIDERS');
 
-export type AiTaskType = 'mindmap_gen' | 'flashcard_gen' | 'quiz_gen';
+export type AiTaskType = 'mindmap_gen' | 'flashcard_gen' | 'quiz_gen' | 'tutor_chat';
 
 export interface AiGenerationRequest {
   task: AiTaskType;

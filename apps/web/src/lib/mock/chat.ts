@@ -23,15 +23,14 @@ function pickResponse(prompt: string): string {
 }
 
 /**
- * Stream tokens of a mock response. Calls onToken once per word.
- * Returns a promise resolved when streaming completes.
+ * Type out an arbitrary text token-by-token (typewriter effect). Used to render
+ * the real BE answer progressively, and by the mock fallback below.
  */
-export function streamMockResponse(
-  prompt: string,
+export function streamText(
+  text: string,
   onToken: (chunk: string) => void,
-  options?: { wordDelayMs?: number; signal?: AbortSignal },
+  options?: { wordDelayMs?: number; signal?: AbortSignal; initialDelayMs?: number },
 ): Promise<void> {
-  const text = pickResponse(prompt);
   const tokens = text.split(/(\s+)/); // keep whitespace as tokens
   const delay = options?.wordDelayMs ?? 35;
 
@@ -50,8 +49,20 @@ export function streamMockResponse(
       i++;
       setTimeout(step, delay);
     }
-    setTimeout(step, 200); // initial think delay
+    setTimeout(step, options?.initialDelayMs ?? 200); // initial think delay
   });
+}
+
+/**
+ * Stream tokens of a mock response (local fallback when BE is unreachable).
+ * Calls onToken once per word. Resolves when streaming completes.
+ */
+export function streamMockResponse(
+  prompt: string,
+  onToken: (chunk: string) => void,
+  options?: { wordDelayMs?: number; signal?: AbortSignal },
+): Promise<void> {
+  return streamText(pickResponse(prompt), onToken, options);
 }
 
 export const SUGGESTED_PROMPTS = [

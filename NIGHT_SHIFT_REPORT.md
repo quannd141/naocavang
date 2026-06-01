@@ -1,12 +1,10 @@
-# 🌙 Night Shift Report — 2026-05-29 (Sprint 8)
+# 🌙 Night Shift Report — 2026-06-01 (Sprint 9)
 
 **Project**: Não Cá Vàng (`nao-ca-vang`)
-**Mode**: NIGHT_SHIFT_MODE=true (mock AI, local-only, no push to main)
-**Branch**: `night-shift/sprint-8-20260529` (off `main`)
-**Commits awaiting Quân's review**: **4** (all on the feature branch)
-
-> Supersedes the 2026-05-20 consolidated report (Sprints 2–7, now merged to
-> `main`/`origin`). This run is a clean Sprint 8 on a fresh feature branch.
+**Mode**: NIGHT_SHIFT_MODE=true (mock AI, mock email, local-only, no push to main)
+**Branch**: `night-shift/sprint-9-20260601` (off `main` @ 817f7f2)
+**Theme**: AI Tutor (F5) + study reminders — both mock-first
+**Commits awaiting review**: **5** (all on the feature branch)
 
 ---
 
@@ -14,135 +12,119 @@
 
 | Story | Commit | What | Tests |
 |-------|--------|------|-------|
-| S8-01 | `f157a08` | Public mindmap gallery `GET /public/mindmaps` (+ removed dead stub) | +4 |
-| S8-02 | `bb071b9` | Daily review activity `GET /users/me/activity` | +6 |
-| S8-03 | `b468269` | Quiz attempt summary in `meta` of `GET /quizzes/:id/attempts` | +5 |
-| S8-04 | `2206283` | Flashcard due-forecast `GET /flashcards/forecast` | +8 |
+| S9-01 | `96e7ca0` | AI `tutor_chat` task + MockAdapter prose + pure `buildTutorPrompt`/`chunkReply` | +7 |
+| S9-02 | `098a931` | `AiRoutingService.chat` + `TutorService` + `POST /tutor/chat` | +3 |
+| S9-03 | `d77dbc0` | FE `/tutor` wired to real BE (`tutorApi.ask`) + typewriter | build |
+| S9-04 | `5b610ca` | EmailPort + MockEmailAdapter + reminder digest domain (pure) | +6 |
+| S9-05 | `de857e6` | `ReminderService.runDailyDigest` + `@Cron` 7AM ICT + admin trigger | +4 |
 
-**Theme**: Public gallery + learning analytics — all backend, all pure-logic,
-all unit-testable.
-
-**API unit tests**: **104 → 127 PASS** (+23 new specs across 4 stories)
-**API typecheck (`tsc --noEmit`)**: clean
-**Biome lint**: clean on all new pure-logic files (`*.service.ts`, `domain/*.ts`, specs)
-**Diff**: 15 files, +582 / −14 (apps/api only — no FE, no infra touched)
+**API unit tests**: **137 → 147 PASS** (+20 new specs this sprint; +20 since Sprint 8's 127)
+**API typecheck**: clean · **Web typecheck**: clean · **Web build**: 16/16 pages, `/tutor` 8.66 kB
+**Biome lint**: clean on all new pure-logic/service/module files
+**Diff**: 22 files, +731 / −18
 
 ---
 
-## Why this scope (honest constraint note)
-
-The dev box this session had **no Docker** and **pnpm only reachable via
-corepack** (`pnpm` not on PATH; `corepack enable` blocked by EPERM on
-`C:\Program Files`). Consequences:
-
-- ✅ Unit tests (vitest + mocked Prisma) **do** run — I installed deps via
-  `corepack pnpm@9.12.0 install` (took 2 tries; first hit `ERR_PNPM_EPERM` on
-  the `D:\.pnpm-store`, second completed) and ran `prisma generate` (which also
-  fixed 2 pre-existing `export.service.spec` failures caused by an
-  ungenerated client → `Prisma.Decimal is not a constructor`).
-- ❌ **No Postgres** → BE-integration-with-real-DB and Playwright **e2e could
-  not run**. So I deliberately scoped Sprint 8 to **pure-logic + service-layer**
-  work where vitest gives real verification, rather than features whose only
-  honest proof is e2e. Every new endpoint's core logic is a pure function with
-  exhaustive unit tests; the thin controller wiring is the only unverified-by-
-  test layer (it's 1–3 lines each, following existing patterns).
-
----
-
-## New API surface (for the morning smoke test)
+## New API surface
 
 ```
-GET /public/mindmaps?subject=math&limit=20   → public gallery (no auth)
-GET /users/me/activity?days=30                → [{date,count}] review heatmap
-GET /quizzes/:id/attempts                     → data[] unchanged + meta{count,bestScore,avgScore,lastScore}
-GET /flashcards/forecast?days=7               → {overdue, buckets[{date,count}], total, days}
+POST /tutor/chat        { question, topicTitle?, subject? }  -> { answer, model }   (authed)
+POST /reminders/run     (admin only) trigger daily digest now -> { candidates, sent, skipped }
+@Cron 07:00 Asia/Ho_Chi_Minh  ReminderService.handleDailyCron  (in-process)
 ```
 
-All four are backend-only. **FE does not yet consume the 3 new endpoints**
-(activity / forecast / gallery-list) — those are dashboard/gallery widgets for
-a future FE story. The quiz `meta` is additive so the existing Sprint-7 intro
-screen is unaffected.
+FE: `/tutor` now calls the BE (was a pure local mock); typewriter reveal kept.
 
 ---
 
 ## Decisions I made unilaterally (Quân check)
 
-- **Gallery list lives on the public (no-auth) controller** `GET /public/mindmaps`,
-  not the authed `GET /mindmaps/public/list` stub (which I deleted). Rationale:
-  a gallery should be browsable logged-out, matching the existing
-  `/public/mindmaps/:id` viewer.
-- **Limit/days clamps**: gallery `limit` ∈ [1,50] default 20; activity `days`
-  ∈ [1,90] default 30; forecast `days` ∈ [1,30] default 7. Invalid/NaN → default.
-  Picked to cap query cost without an offset/cursor pagination layer (defer that
-  until the FE actually needs infinite scroll).
-- **Quiz summary under `meta`, not `data`** — keeps the Sprint-7 FE contract
-  (`data` = attempt array) intact while exposing best/avg/last.
-- **Forecast separates `overdue` from `total`** — `total` counts only
-  cards due *within* the window; cards due before today are surfaced as
-  `overdue` so the dashboard can nudge "catch up" distinctly from "upcoming".
+- **Tutor is stateless** (no conversation persistence) → no new DB model, no
+  migration. Conversation history can be a later sprint.
+- **Tutor bypasses AiRoutingService.generate** and uses a new `chat()` method
+  that does NOT write `AiUsageLog`, because the `AiOperation` Prisma enum has no
+  `tutor_chat` value and adding one needs a migration (no DB/Docker tonight).
+  Quota is still enforced + decremented. **Follow-up**: a migration sprint should
+  add `tutor_chat` to `AiOperation` and log tutor usage in `chat()`.
+- **No true SSE streaming** — browser `EventSource` can't send the Bearer header
+  this app uses. BE returns the full answer; FE types it out. Real server-push
+  needs cookie-auth or a fetch-ReadableStream client (future).
+- **Reminders via `@nestjs/schedule` `@Cron`**, not BullMQ — BullMQ needs Redis
+  which isn't available (no Docker). `ScheduleModule` runs in-process, no Redis.
+- **Reminder selection**: only users with `preferences.reminderEnabled` AND ≥1
+  due card get an email (no "0 cards" noise). Digest lists top-5 decks most-due
+  first, "+N bộ khác" for the rest.
+- **`POST /reminders/run` is admin-only** (tier/role === 'admin') — a manual/ops
+  trigger so you can verify the digest without waiting for 7AM.
 
 ---
 
-## ⚠️ Things to look at in the morning
+## ⚠️ Verification limits this session (honest)
 
-1. **Pre-existing lint noise (not introduced by me)**: `biome lint` reports
-   "Decorators are only valid on class declarations…" on *every* NestJS
-   controller (e.g. the untouched `mindmap.controller.delete`). The repo
-   `biome.json` is missing
-   `javascript.parser.unsafeParameterDecoratorsEnabled: true`. One-line fix,
-   but it changes lint behaviour repo-wide so I left it for you. **Recommended**:
-   add that flag so `pnpm lint` is green on the API. (My new pure-logic files
-   lint clean today only because they have no param decorators.)
-2. **Line endings**: new files committed as LF; git warns it'll convert to CRLF
-   on checkout (Windows `autocrlf`). Harmless, matches repo `.gitattributes`
-   behaviour for the rest of the tree.
-3. **Merge**: branch is local only. `git log --oneline main..night-shift/sprint-8-20260529`
-   shows the 4 commits. Suggested: review → fast-forward/merge into `main` → push.
+- **No Docker → no Postgres/Redis** → could NOT run: live cron, the SSE/HTTP
+  endpoints end-to-end, BE-with-real-DB, or Playwright e2e.
+- What IS verified: all new **pure logic + services** via vitest (mocked Prisma/
+  AI/email), full **API typecheck**, **web typecheck + next build**. The thin
+  controller wiring + the `@Cron` decorator are unverified-by-test (follow
+  existing patterns; compile clean).
+
+## Morning smoke test (when BE + DB are up)
+
+```
+# Tutor (works in NIGHT_SHIFT_MODE with mock answers):
+/tutor → ask anything → mock VI answer types out. Set NIGHT_SHIFT_MODE=false +
+real keys for actual answers.
+
+# Reminders (needs an admin user + some due cards):
+POST /reminders/run  (as admin) → check API logs for "[EMAIL MOCK] to=… subject=…"
+                                  and the {candidates, sent, skipped} response.
+```
 
 ---
 
-## Tech debt still open (unchanged this sprint)
+## Tech debt / follow-ups
 
 | ID | Item | Note |
 |----|------|------|
-| TEC-04 | BE integration tests with real Postgres (testcontainers) | **Blocked tonight: no Docker.** Needs your machine to have Docker for the test container. |
-| TEC-05 | JWT instead of session table (stateless API) | Architecture change — deliberately NOT attempted overnight (per night-shift rules). |
-| TEC-06 | Some FE pages still rely on mock seed (mindmap template fallback) | FE change; best verified with e2e which couldn't run tonight. Deferred. |
+| NEW | Add `tutor_chat` to `AiOperation` enum + log tutor usage | needs a migration |
+| NEW | True tutor streaming (fetch-stream or cookie-auth SSE) | UX nicety |
+| NEW | ResendEmailAdapter (swap MockEmailAdapter) | needs PH-005 key |
+| NEW | FE: settings toggle already exists for reminders? verify wiring to prefs | — |
+| TEC-04 | BE integration tests (testcontainers) | still blocked: no Docker |
+| TEC-05 | JWT stateless auth | arch change, not attempted overnight |
+| TEC-06 | FE mock-seed fallback cleanup | deferred |
+| — | biome `unsafeParameterDecoratorsEnabled` config | still flagged, 1-line fix |
 
-## Blocked items (need Quân's credentials/decisions) — see PENDING_HUMAN.md
+## Blocked (need Quân) — PENDING_HUMAN.md unchanged
 
-Unchanged from prior runs: Google OAuth (PH-001), Gemini key (PH-002), R2
-(PH-004), Resend (PH-005), Sentry (PH-006), hosting (PH-007), domain (PH-008),
-trademark (PH-009), real-user validation (PH-010). None touched tonight.
+Google OAuth, Gemini key, R2, **Resend (PH-005 — now needed for real reminder email)**,
+Sentry, hosting, domain, trademark, real-user validation. None touched tonight.
 
 ---
 
 ## What I did NOT do
 
-- ❌ No push to `origin` (nothing to `main`)
-- ❌ No merge into `main`
-- ❌ No deploy / docker push / migrations
-- ❌ No paid AI calls (NIGHT_SHIFT_MODE; mock adapter only — and no AI code touched)
-- ❌ No FE / infra / CI / `.env*` changes
-- ❌ Did not "fix" the repo-wide biome config unilaterally (flagged instead)
+- ❌ No push to `origin` / no merge to `main` · ❌ No deploy · ❌ No migrations applied
+- ❌ No paid AI calls (MockAiAdapter) · ❌ No real emails (MockEmailAdapter logs)
+- ❌ No new dependencies (all needed libs already in package.json)
+- ❌ Did not add the `tutor_chat` enum value (would need a migration — flagged)
 
 ---
 
 ## 🧠 Context Checkpoint
 
-- Estimate context: 🟠 **~55–60%** — one focused sprint, ~40 tool calls, 1 big
-  install. Lower than the Sprints 2–7 mega-run.
-- State is fully captured in: this report + `NIGHT_SHIFT_LOG.md` + the 4 commit
-  messages + the CHANGELOG `[Unreleased]` section.
-- **Recommendation**: if continuing, `/compact` first, then:
+- Estimate context: 🟠 **~70%** — this continues a long session (Sprint 8 + FE PR
+  + Sprint 9). Several modules added.
+- State captured in: this report + `NIGHT_SHIFT_LOG.md` + 5 commit messages +
+  CHANGELOG `[Unreleased]` Sprint 9 section.
+- **Recommendation**: `/compact` before the next task, then:
   ```
-  Đọc NIGHT_SHIFT_REPORT.md + NIGHT_SHIFT_LOG.md. Sprint 8 (4 commits) trên
-  branch night-shift/sprint-8-20260529, 127/127 API unit tests pass, chưa push.
-  Việc cần: (1) thêm unsafeParameterDecoratorsEnabled vào biome.json, (2) review
-  + merge branch, (3) FE story tiêu thụ 3 endpoint mới (gallery/activity/forecast).
+  Đọc NIGHT_SHIFT_REPORT.md + NIGHT_SHIFT_LOG.md. Sprint 9 (5 commits) trên
+  branch night-shift/sprint-9-20260601, 147/147 API tests, web build OK, chưa push.
+  Việc: review + merge (PR như Sprint 8); follow-up: enum tutor_chat + migration,
+  ResendEmailAdapter (PH-005), true tutor streaming.
   ```
 
 ---
 
-_Generated by night-shift skill @ 2026-05-29 ~10:08 local time._
-_Awaiting Quân's review in the morning._
+_Generated by night-shift skill @ 2026-06-01 ~11:20 local time. Awaiting Quân's review._

@@ -310,6 +310,21 @@ export const aiApi = {
     }),
 };
 
+// ---------- Tutor ----------
+
+export interface TutorAnswer {
+  answer: string;
+  model: string;
+}
+
+export const tutorApi = {
+  ask: (question: string, context?: { topicTitle?: string; subject?: string }) =>
+    apiRequest<TutorAnswer>('/tutor/chat', {
+      method: 'POST',
+      body: { question, ...context },
+    }),
+};
+
 // ---------- Flashcards ----------
 
 export interface FlashcardDeckSummary {

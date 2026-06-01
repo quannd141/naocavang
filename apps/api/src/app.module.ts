@@ -8,7 +8,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { FlashcardModule } from './modules/flashcard/flashcard.module';
 import { MindmapModule } from './modules/mindmap/mindmap.module';
 import { QuizModule } from './modules/quiz/quiz.module';
+import { ReminderModule } from './modules/reminder/reminder.module';
 import { TemplateModule } from './modules/template/template.module';
+import { TutorModule } from './modules/tutor/tutor.module';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from './infrastructure/database/prisma.module';
 
@@ -25,6 +27,8 @@ import { PrismaModule } from './infrastructure/database/prisma.module';
     AiModule,
     FlashcardModule,
     QuizModule,
+    TutorModule,
+    ReminderModule,
   ],
   controllers: [HealthController],
 })
